@@ -1,0 +1,33 @@
+[workspace]
+members = [
+    "tribewarez-staking",
+    "tribewarez-vault",
+    "tribewarez-swap",
+    "tribewarez-pot-o"
+]
+
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+tribewarez_staking = "Go2BZRhNLoaVni3QunrKPAXYdHtwZtTXuVspxpdAeDS8"
+tribewarez_vault = "HmWGA3JAF6basxGCvvGNHAdTBE3qCPhJCeFJAd7r5ra9"
+tribewarez_swap = "GPGGnKwnvKseSxzPukrNvch1CwYhifTqgj2RdW1P26H3"
+tribewarez_pot_o = "PoToVa1idator11111111111111111111111111111"
+
+[programs.mainnet]
+tribewarez_staking = "Go2BZRhNLoaVni3QunrKPAXYdHtwZtTXuVspxpdAeDS8"
+tribewarez_vault = "HmWGA3JAF6basxGCvvGNHAdTBE3qCPhJCeFJAd7r5ra9"
+tribewarez_swap = "GPGGnKwnvKseSxzPukrNvch1CwYhifTqgj2RdW1P26H3"
+tribewarez_pot_o = "PoToVa1idator11111111111111111111111111111"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

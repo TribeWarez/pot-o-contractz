@@ -1,0 +1,13 @@
+# Rust build artifacts
+target/
+**/target/
+
+# Anchor generated (rebuild from source)
+idl/
+types/
+
+# OS / IDE
+.DS_Store
+*.swp
+*.swo
+*~

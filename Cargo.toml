@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "tribewarez-staking",
+    "tribewarez-vault", 
+    "tribewarez-swap"
+]
+resolver = "2"
+
+[workspace.dependencies]
+anchor-lang = "0.28.0"
+spl-token = "3.0"

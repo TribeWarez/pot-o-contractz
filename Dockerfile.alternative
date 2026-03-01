@@ -1,0 +1,38 @@
+# Alternative Dockerfile - Uses system Solana or manual installation
+# Use this if the main Dockerfile has SSL/network issues
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH=$CARGO_HOME/bin:$PATH
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    libudev-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust 1.70.0
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.70.0 && \
+    rustup component add rustfmt clippy
+
+# Install Anchor CLI 0.28.0 (doesn't require Solana for building)
+RUN cargo install --git https://github.com/coral-xyz/anchor --tag v0.28.0 anchor-cli --locked --force
+
+# Note: Solana CLI installation skipped due to network issues
+# Install Solana manually after container starts, or mount it as a volume
+# Or use: docker run --rm -v /usr/local/bin:/host-bin your-image sh -c "cp /path/to/solana /host-bin/"
+
+WORKDIR /workspace
+
+# Verify Anchor installation
+RUN anchor --version && rustc --version
+
+CMD ["/bin/bash"]

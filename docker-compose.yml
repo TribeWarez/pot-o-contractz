@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  anchor-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tribewarez-anchor-build:latest
+    container_name: tribewarez-anchor-builder
+    volumes:
+      - .:/workspace
+      - cargo-cache:/usr/local/cargo/registry
+      - solana-cache:/root/.local/share/solana
+    working_dir: /workspace/programs
+    environment:
+      - RUST_BACKTRACE=1
+      - ANCHOR_PROVIDER_URL=https://api.devnet.solana.com
+      - PATH=/root/.local/share/solana/install/active_release/bin:/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    command: /bin/bash -c "export PATH=\"/root/.local/share/solana/install/active_release/bin:\$PATH\" && cd programs && anchor build && echo '✅ Build successful!'"
+    stdin_open: true
+    tty: true
+
+  anchor-shell:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tribewarez-anchor-build:latest
+    container_name: tribewarez-anchor-shell
+    volumes:
+      - .:/workspace
+      - cargo-cache:/usr/local/cargo/registry
+      - solana-cache:/root/.local/share/solana
+    working_dir: /workspace/programs
+    environment:
+      - RUST_BACKTRACE=1
+      - PATH=/root/.local/share/solana/install/active_release/bin:/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    command: /bin/bash -c "export PATH=\"/root/.local/share/solana/install/active_release/bin:\$PATH\" && /bin/bash"
+    stdin_open: true
+    tty: true
+
+volumes:
+  cargo-cache:
+  solana-cache:

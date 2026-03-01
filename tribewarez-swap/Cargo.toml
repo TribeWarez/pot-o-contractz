@@ -1,0 +1,20 @@
+[package]
+name = "tribewarez-swap"
+version = "0.1.0"
+description = "PTtC Token Swap AMM for Tribewarez DeFi"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "tribewarez_swap"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = { workspace = true }
+spl-token = { workspace = true, features = ["no-entrypoint"] }

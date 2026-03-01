@@ -1,0 +1,50 @@
+# Tribewarez DeFi Smart Contracts - Optimized Docker Build
+# Uses multi-stage build for faster rebuilds
+
+FROM ubuntu:22.04 as base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH=$CARGO_HOME/bin:/root/.local/share/solana/install/active_release/bin:$PATH
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    libudev-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust 1.70.0
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.70.0 && \
+    rustup component add rustfmt clippy
+
+# Install Solana CLI 1.16 (using release.solana.com)
+RUN sh -c "$(curl -sSfL https://release.solana.com/stable/install)" && \
+    solana --version
+
+# Install Anchor CLI 0.28.0 from git
+RUN cargo install --git https://github.com/coral-xyz/anchor --tag v0.28.0 anchor-cli --locked --force
+
+# Verify installations
+RUN anchor --version && solana --version && rustc --version
+
+WORKDIR /workspace
+
+# Copy only dependency files first (for better caching)
+COPY Cargo.toml Anchor.toml ./
+COPY tribewarez-staking/Cargo.toml ./tribewarez-staking/
+COPY tribewarez-vault/Cargo.toml ./tribewarez-vault/
+COPY tribewarez-swap/Cargo.toml ./tribewarez-swap/
+
+# Generate lockfile
+RUN cargo generate-lockfile || true
+
+# Copy source code
+COPY . .
+
+CMD ["/bin/bash"]
