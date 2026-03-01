@@ -165,5 +165,5 @@ programs/
 
 For issues or questions:
 - Check `programs/README.md` for program documentation
-- Check `programs/DEPLOYMENT.md` for deployment details
+- Check `DEPLOYMENT.md` in this folder for deployment details
 - Review Anchor docs: https://www.anchor-lang.com/docs

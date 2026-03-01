@@ -78,7 +78,7 @@ pub mod tribewarez_pot_o {
 
         // 5. Record proof
         let proof_record = &mut ctx.accounts.proof_record;
-        proof_record.miner = ctx.accounts.authority.key();
+        proof_record.miner = ctx.accounts.miner.key();
         proof_record.challenge_id = params.challenge_id;
         proof_record.mml_score = params.mml_score;
         proof_record.path_signature = params.path_signature;
@@ -283,22 +283,24 @@ pub struct SubmitProof<'info> {
         bump = config.bump,
     )]
     pub config: Account<'info, PotOConfig>,
+    /// CHECK: miner pubkey used for PDA derivation; identity is in instruction data
+    pub miner: AccountInfo<'info>,
     #[account(
         mut,
-        seeds = [b"miner", authority.key().as_ref()],
+        seeds = [b"miner", miner.key().as_ref()],
         bump = miner_account.bump,
     )]
     pub miner_account: Account<'info, MinerAccount>,
     #[account(
         init,
-        payer = authority,
+        payer = relayer,
         space = 8 + 32 + 32 + 8 + 32 + 8 + 8 + 8 + 1,
         seeds = [b"proof", params.challenge_id.as_ref()],
         bump
     )]
     pub proof_record: Account<'info, ProofRecord>,
     #[account(mut)]
-    pub authority: Signer<'info>,
+    pub relayer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
