@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer, MintTo, Burn};
+use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, Transfer};
 
 declare_id!("GPGGnKwnvKseSxzPukrNvch1CwYhifTqgj2RdW1P26H3");
 
@@ -8,21 +8,18 @@ declare_id!("GPGGnKwnvKseSxzPukrNvch1CwYhifTqgj2RdW1P26H3");
 /// Supports liquidity provision, swaps, and fee collection.
 
 // Fee configuration (basis points - 10000 = 100%)
-const SWAP_FEE_BPS: u64 = 30;      // 0.30% swap fee
-const PROTOCOL_FEE_BPS: u64 = 5;   // 0.05% protocol fee
-const LP_FEE_BPS: u64 = 25;        // 0.25% to LPs
+const SWAP_FEE_BPS: u64 = 30; // 0.30% swap fee
+const PROTOCOL_FEE_BPS: u64 = 5; // 0.05% protocol fee
+const LP_FEE_BPS: u64 = 25; // 0.25% to LPs
 
 #[program]
 pub mod tribewarez_swap {
     use super::*;
 
     /// Initialize a new liquidity pool
-    pub fn initialize_pool(
-        ctx: Context<InitializePool>,
-        pool_bump: u8,
-    ) -> Result<()> {
+    pub fn initialize_pool(ctx: Context<InitializePool>, pool_bump: u8) -> Result<()> {
         let pool = &mut ctx.accounts.pool;
-        
+
         pool.authority = ctx.accounts.authority.key();
         pool.token_a_mint = ctx.accounts.token_a_mint.key();
         pool.token_b_mint = ctx.accounts.token_b_mint.key();
@@ -39,14 +36,14 @@ pub mod tribewarez_swap {
         pool.bump = pool_bump;
         pool.is_active = true;
         pool.created_at = Clock::get()?.unix_timestamp;
-        
+
         emit!(PoolInitialized {
             pool: pool.key(),
             token_a_mint: pool.token_a_mint,
             token_b_mint: pool.token_b_mint,
             lp_mint: pool.lp_mint,
         });
-        
+
         Ok(())
     }
 
@@ -69,7 +66,7 @@ pub mod tribewarez_swap {
                 .checked_mul(amount_b as u128)
                 .ok_or(SwapError::MathOverflow)?
                 .integer_sqrt() as u64;
-            
+
             require!(lp_tokens_to_mint > 0, SwapError::InsufficientLiquidity);
         } else {
             // Calculate proportional LP tokens
@@ -78,18 +75,21 @@ pub mod tribewarez_swap {
                 .ok_or(SwapError::MathOverflow)?
                 .checked_div(pool.reserve_a as u128)
                 .ok_or(SwapError::MathOverflow)? as u64;
-            
+
             let lp_from_b = (amount_b as u128)
                 .checked_mul(pool.total_lp_supply as u128)
                 .ok_or(SwapError::MathOverflow)?
                 .checked_div(pool.reserve_b as u128)
                 .ok_or(SwapError::MathOverflow)? as u64;
-            
+
             // Use minimum to prevent manipulation
             lp_tokens_to_mint = lp_from_a.min(lp_from_b);
         }
 
-        require!(lp_tokens_to_mint >= min_lp_tokens, SwapError::SlippageExceeded);
+        require!(
+            lp_tokens_to_mint >= min_lp_tokens,
+            SwapError::SlippageExceeded
+        );
 
         // Transfer token A to pool
         let cpi_accounts_a = Transfer {
@@ -139,9 +139,18 @@ pub mod tribewarez_swap {
         )?;
 
         // Update pool state
-        pool.reserve_a = pool.reserve_a.checked_add(amount_a).ok_or(SwapError::MathOverflow)?;
-        pool.reserve_b = pool.reserve_b.checked_add(amount_b).ok_or(SwapError::MathOverflow)?;
-        pool.total_lp_supply = pool.total_lp_supply.checked_add(lp_tokens_to_mint).ok_or(SwapError::MathOverflow)?;
+        pool.reserve_a = pool
+            .reserve_a
+            .checked_add(amount_a)
+            .ok_or(SwapError::MathOverflow)?;
+        pool.reserve_b = pool
+            .reserve_b
+            .checked_add(amount_b)
+            .ok_or(SwapError::MathOverflow)?;
+        pool.total_lp_supply = pool
+            .total_lp_supply
+            .checked_add(lp_tokens_to_mint)
+            .ok_or(SwapError::MathOverflow)?;
 
         emit!(LiquidityAdded {
             pool: pool.key(),
@@ -164,21 +173,24 @@ pub mod tribewarez_swap {
         require!(lp_amount > 0, SwapError::InvalidAmount);
 
         let pool = &mut ctx.accounts.pool;
-        
+
         // Calculate token amounts to return
         let amount_a = (lp_amount as u128)
             .checked_mul(pool.reserve_a as u128)
             .ok_or(SwapError::MathOverflow)?
             .checked_div(pool.total_lp_supply as u128)
             .ok_or(SwapError::MathOverflow)? as u64;
-        
+
         let amount_b = (lp_amount as u128)
             .checked_mul(pool.reserve_b as u128)
             .ok_or(SwapError::MathOverflow)?
             .checked_div(pool.total_lp_supply as u128)
             .ok_or(SwapError::MathOverflow)? as u64;
 
-        require!(amount_a >= min_amount_a && amount_b >= min_amount_b, SwapError::SlippageExceeded);
+        require!(
+            amount_a >= min_amount_a && amount_b >= min_amount_b,
+            SwapError::SlippageExceeded
+        );
 
         // Burn LP tokens
         let cpi_accounts_burn = Burn {
@@ -187,7 +199,10 @@ pub mod tribewarez_swap {
             authority: ctx.accounts.user.to_account_info(),
         };
         token::burn(
-            CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts_burn),
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                cpi_accounts_burn,
+            ),
             lp_amount,
         )?;
 
@@ -231,9 +246,18 @@ pub mod tribewarez_swap {
         )?;
 
         // Update pool state
-        pool.reserve_a = pool.reserve_a.checked_sub(amount_a).ok_or(SwapError::MathOverflow)?;
-        pool.reserve_b = pool.reserve_b.checked_sub(amount_b).ok_or(SwapError::MathOverflow)?;
-        pool.total_lp_supply = pool.total_lp_supply.checked_sub(lp_amount).ok_or(SwapError::MathOverflow)?;
+        pool.reserve_a = pool
+            .reserve_a
+            .checked_sub(amount_a)
+            .ok_or(SwapError::MathOverflow)?;
+        pool.reserve_b = pool
+            .reserve_b
+            .checked_sub(amount_b)
+            .ok_or(SwapError::MathOverflow)?;
+        pool.total_lp_supply = pool
+            .total_lp_supply
+            .checked_sub(lp_amount)
+            .ok_or(SwapError::MathOverflow)?;
 
         emit!(LiquidityRemoved {
             pool: pool.key(),
@@ -247,31 +271,29 @@ pub mod tribewarez_swap {
     }
 
     /// Swap token A for token B
-    pub fn swap_a_for_b(
-        ctx: Context<Swap>,
-        amount_in: u64,
-        min_amount_out: u64,
-    ) -> Result<()> {
+    pub fn swap_a_for_b(ctx: Context<Swap>, amount_in: u64, min_amount_out: u64) -> Result<()> {
         require!(amount_in > 0, SwapError::InvalidAmount);
         require!(ctx.accounts.pool.is_active, SwapError::PoolInactive);
 
         let pool = &mut ctx.accounts.pool;
-        
+
         // Calculate output using constant product formula with fee
-        let amount_out = calculate_swap_output(
-            amount_in,
-            pool.reserve_a,
-            pool.reserve_b,
-            pool.swap_fee_bps,
-        )?;
+        let amount_out =
+            calculate_swap_output(amount_in, pool.reserve_a, pool.reserve_b, pool.swap_fee_bps)?;
 
         require!(amount_out >= min_amount_out, SwapError::SlippageExceeded);
-        require!(amount_out < pool.reserve_b, SwapError::InsufficientLiquidity);
+        require!(
+            amount_out < pool.reserve_b,
+            SwapError::InsufficientLiquidity
+        );
 
         // Calculate and track fees
         let fee = calculate_fee(amount_in, pool.swap_fee_bps)?;
         let protocol_fee = calculate_fee(amount_in, pool.protocol_fee_bps)?;
-        pool.collected_fees_a = pool.collected_fees_a.checked_add(protocol_fee).ok_or(SwapError::MathOverflow)?;
+        pool.collected_fees_a = pool
+            .collected_fees_a
+            .checked_add(protocol_fee)
+            .ok_or(SwapError::MathOverflow)?;
 
         // Transfer token A from user to pool
         let cpi_accounts_in = Transfer {
@@ -280,7 +302,10 @@ pub mod tribewarez_swap {
             authority: ctx.accounts.user.to_account_info(),
         };
         token::transfer(
-            CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts_in),
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                cpi_accounts_in,
+            ),
             amount_in,
         )?;
 
@@ -310,8 +335,14 @@ pub mod tribewarez_swap {
         )?;
 
         // Update reserves
-        pool.reserve_a = pool.reserve_a.checked_add(amount_in).ok_or(SwapError::MathOverflow)?;
-        pool.reserve_b = pool.reserve_b.checked_sub(amount_out).ok_or(SwapError::MathOverflow)?;
+        pool.reserve_a = pool
+            .reserve_a
+            .checked_add(amount_in)
+            .ok_or(SwapError::MathOverflow)?;
+        pool.reserve_b = pool
+            .reserve_b
+            .checked_sub(amount_out)
+            .ok_or(SwapError::MathOverflow)?;
 
         emit!(Swapped {
             pool: pool.key(),
@@ -327,31 +358,29 @@ pub mod tribewarez_swap {
     }
 
     /// Swap token B for token A
-    pub fn swap_b_for_a(
-        ctx: Context<Swap>,
-        amount_in: u64,
-        min_amount_out: u64,
-    ) -> Result<()> {
+    pub fn swap_b_for_a(ctx: Context<Swap>, amount_in: u64, min_amount_out: u64) -> Result<()> {
         require!(amount_in > 0, SwapError::InvalidAmount);
         require!(ctx.accounts.pool.is_active, SwapError::PoolInactive);
 
         let pool = &mut ctx.accounts.pool;
-        
+
         // Calculate output using constant product formula with fee
-        let amount_out = calculate_swap_output(
-            amount_in,
-            pool.reserve_b,
-            pool.reserve_a,
-            pool.swap_fee_bps,
-        )?;
+        let amount_out =
+            calculate_swap_output(amount_in, pool.reserve_b, pool.reserve_a, pool.swap_fee_bps)?;
 
         require!(amount_out >= min_amount_out, SwapError::SlippageExceeded);
-        require!(amount_out < pool.reserve_a, SwapError::InsufficientLiquidity);
+        require!(
+            amount_out < pool.reserve_a,
+            SwapError::InsufficientLiquidity
+        );
 
         // Calculate and track fees
         let fee = calculate_fee(amount_in, pool.swap_fee_bps)?;
         let protocol_fee = calculate_fee(amount_in, pool.protocol_fee_bps)?;
-        pool.collected_fees_b = pool.collected_fees_b.checked_add(protocol_fee).ok_or(SwapError::MathOverflow)?;
+        pool.collected_fees_b = pool
+            .collected_fees_b
+            .checked_add(protocol_fee)
+            .ok_or(SwapError::MathOverflow)?;
 
         // Transfer token B from user to pool
         let cpi_accounts_in = Transfer {
@@ -360,7 +389,10 @@ pub mod tribewarez_swap {
             authority: ctx.accounts.user.to_account_info(),
         };
         token::transfer(
-            CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts_in),
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                cpi_accounts_in,
+            ),
             amount_in,
         )?;
 
@@ -390,8 +422,14 @@ pub mod tribewarez_swap {
         )?;
 
         // Update reserves
-        pool.reserve_b = pool.reserve_b.checked_add(amount_in).ok_or(SwapError::MathOverflow)?;
-        pool.reserve_a = pool.reserve_a.checked_sub(amount_out).ok_or(SwapError::MathOverflow)?;
+        pool.reserve_b = pool
+            .reserve_b
+            .checked_add(amount_in)
+            .ok_or(SwapError::MathOverflow)?;
+        pool.reserve_a = pool
+            .reserve_a
+            .checked_sub(amount_out)
+            .ok_or(SwapError::MathOverflow)?;
 
         emit!(Swapped {
             pool: pool.key(),
@@ -407,20 +445,17 @@ pub mod tribewarez_swap {
     }
 
     /// Get quote for swap (view function - doesn't modify state)
-    pub fn get_swap_quote(
-        ctx: Context<GetQuote>,
-        amount_in: u64,
-        is_a_to_b: bool,
-    ) -> Result<()> {
+    pub fn get_swap_quote(ctx: Context<GetQuote>, amount_in: u64, is_a_to_b: bool) -> Result<()> {
         let pool = &ctx.accounts.pool;
-        
+
         let (reserve_in, reserve_out) = if is_a_to_b {
             (pool.reserve_a, pool.reserve_b)
         } else {
             (pool.reserve_b, pool.reserve_a)
         };
 
-        let amount_out = calculate_swap_output(amount_in, reserve_in, reserve_out, pool.swap_fee_bps)?;
+        let amount_out =
+            calculate_swap_output(amount_in, reserve_in, reserve_out, pool.swap_fee_bps)?;
         let fee = calculate_fee(amount_in, pool.swap_fee_bps)?;
         let price_impact = calculate_price_impact(amount_in, reserve_in)?;
 
@@ -438,7 +473,7 @@ pub mod tribewarez_swap {
     /// Admin: Withdraw collected protocol fees
     pub fn withdraw_fees(ctx: Context<WithdrawFees>) -> Result<()> {
         let pool = &mut ctx.accounts.pool;
-        
+
         let fees_a = pool.collected_fees_a;
         let fees_b = pool.collected_fees_b;
 
@@ -511,21 +546,21 @@ fn calculate_swap_output(
     let amount_in_with_fee = (amount_in as u128)
         .checked_mul((10000 - fee_bps) as u128)
         .ok_or(SwapError::MathOverflow)?;
-    
+
     let numerator = amount_in_with_fee
         .checked_mul(reserve_out as u128)
         .ok_or(SwapError::MathOverflow)?;
-    
+
     let denominator = (reserve_in as u128)
         .checked_mul(10000)
         .ok_or(SwapError::MathOverflow)?
         .checked_add(amount_in_with_fee)
         .ok_or(SwapError::MathOverflow)?;
-    
+
     let output = numerator
         .checked_div(denominator)
         .ok_or(SwapError::MathOverflow)? as u64;
-    
+
     Ok(output)
 }
 

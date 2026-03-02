@@ -1,8 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{
-    program::invoke_signed,
-    system_instruction,
-};
+use anchor_lang::solana_program::{program::invoke_signed, system_instruction};
 
 declare_id!("Go2BZRhNLoaVni3QunrKPAXYdHtwZtTXuVspxpdAeDS8");
 
@@ -17,11 +14,11 @@ pub mod tribewarez_staking {
     /// Initialize a new staking pool for a specific token mint (PTtC)
     pub fn initialize_pool(
         ctx: Context<InitializePool>,
-        reward_rate: u64,        // Rewards per second per token staked (in basis points)
-        lock_duration: i64,      // Minimum lock duration in seconds
+        reward_rate: u64,   // Rewards per second per token staked (in basis points)
+        lock_duration: i64, // Minimum lock duration in seconds
     ) -> Result<()> {
         let pool = &mut ctx.accounts.staking_pool;
-        
+
         pool.authority = ctx.accounts.authority.key();
         pool.token_mint = ctx.accounts.token_mint.key();
         pool.reward_mint = ctx.accounts.reward_mint.key();
@@ -34,7 +31,7 @@ pub mod tribewarez_staking {
         pool.bump = ctx.bumps.staking_pool;
         pool.is_active = true;
         pool.created_at = Clock::get()?.unix_timestamp;
-        
+
         emit!(PoolInitialized {
             pool: pool.key(),
             authority: pool.authority,
@@ -42,14 +39,17 @@ pub mod tribewarez_staking {
             reward_rate,
             lock_duration,
         });
-        
+
         Ok(())
     }
 
     /// Stake PTtC tokens into the pool
     pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
         require!(amount > 0, StakingError::InvalidAmount);
-        require!(ctx.accounts.staking_pool.is_active, StakingError::PoolInactive);
+        require!(
+            ctx.accounts.staking_pool.is_active,
+            StakingError::PoolInactive
+        );
 
         let clock = Clock::get()?;
         let stake_account = &mut ctx.accounts.stake_account;
@@ -63,7 +63,9 @@ pub mod tribewarez_staking {
                 clock.unix_timestamp,
                 pool.reward_rate,
             )?;
-            stake_account.pending_rewards = stake_account.pending_rewards.checked_add(pending)
+            stake_account.pending_rewards = stake_account
+                .pending_rewards
+                .checked_add(pending)
                 .ok_or(StakingError::MathOverflow)?;
         }
 
@@ -76,7 +78,7 @@ pub mod tribewarez_staking {
             &[],
             amount,
         )?;
-        
+
         anchor_lang::solana_program::program::invoke(
             &transfer_ix,
             &[
@@ -90,14 +92,18 @@ pub mod tribewarez_staking {
         // Update stake account
         stake_account.owner = ctx.accounts.user.key();
         stake_account.pool = pool.key();
-        stake_account.amount = stake_account.amount.checked_add(amount)
+        stake_account.amount = stake_account
+            .amount
+            .checked_add(amount)
             .ok_or(StakingError::MathOverflow)?;
         stake_account.stake_time = clock.unix_timestamp;
         stake_account.last_reward_time = clock.unix_timestamp;
         stake_account.unlock_time = clock.unix_timestamp + pool.lock_duration;
 
         // Update pool totals
-        pool.total_staked = pool.total_staked.checked_add(amount)
+        pool.total_staked = pool
+            .total_staked
+            .checked_add(amount)
             .ok_or(StakingError::MathOverflow)?;
 
         emit!(Staked {
@@ -114,12 +120,15 @@ pub mod tribewarez_staking {
     /// Unstake tokens from the pool
     pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         require!(amount > 0, StakingError::InvalidAmount);
-        
+
         let clock = Clock::get()?;
         let stake_account = &mut ctx.accounts.stake_account;
         let pool = &mut ctx.accounts.staking_pool;
 
-        require!(stake_account.amount >= amount, StakingError::InsufficientStake);
+        require!(
+            stake_account.amount >= amount,
+            StakingError::InsufficientStake
+        );
         require!(
             clock.unix_timestamp >= stake_account.unlock_time,
             StakingError::StillLocked
@@ -132,17 +141,15 @@ pub mod tribewarez_staking {
             clock.unix_timestamp,
             pool.reward_rate,
         )?;
-        stake_account.pending_rewards = stake_account.pending_rewards.checked_add(pending)
+        stake_account.pending_rewards = stake_account
+            .pending_rewards
+            .checked_add(pending)
             .ok_or(StakingError::MathOverflow)?;
         stake_account.last_reward_time = clock.unix_timestamp;
 
         // Transfer tokens back to user using PDA signer
         let token_mint = pool.token_mint;
-        let seeds = &[
-            b"staking_pool",
-            token_mint.as_ref(),
-            &[pool.bump],
-        ];
+        let seeds = &[b"staking_pool", token_mint.as_ref(), &[pool.bump]];
         let signer_seeds = &[&seeds[..]];
 
         let transfer_ix = spl_token::instruction::transfer(
@@ -153,7 +160,7 @@ pub mod tribewarez_staking {
             &[],
             amount,
         )?;
-        
+
         invoke_signed(
             &transfer_ix,
             &[
@@ -166,11 +173,15 @@ pub mod tribewarez_staking {
         )?;
 
         // Update stake account
-        stake_account.amount = stake_account.amount.checked_sub(amount)
+        stake_account.amount = stake_account
+            .amount
+            .checked_sub(amount)
             .ok_or(StakingError::MathOverflow)?;
 
         // Update pool totals
-        pool.total_staked = pool.total_staked.checked_sub(amount)
+        pool.total_staked = pool
+            .total_staked
+            .checked_sub(amount)
             .ok_or(StakingError::MathOverflow)?;
 
         emit!(Unstaked {
@@ -197,18 +208,16 @@ pub mod tribewarez_staking {
             pool.reward_rate,
         )?;
 
-        let total_rewards = stake_account.pending_rewards.checked_add(pending)
+        let total_rewards = stake_account
+            .pending_rewards
+            .checked_add(pending)
             .ok_or(StakingError::MathOverflow)?;
 
         require!(total_rewards > 0, StakingError::NoRewardsToClaim);
 
         // Transfer rewards to user using PDA signer
         let token_mint = pool.token_mint;
-        let seeds = &[
-            b"staking_pool",
-            token_mint.as_ref(),
-            &[pool.bump],
-        ];
+        let seeds = &[b"staking_pool", token_mint.as_ref(), &[pool.bump]];
         let signer_seeds = &[&seeds[..]];
 
         let transfer_ix = spl_token::instruction::transfer(
@@ -219,7 +228,7 @@ pub mod tribewarez_staking {
             &[],
             total_rewards,
         )?;
-        
+
         invoke_signed(
             &transfer_ix,
             &[
@@ -234,11 +243,13 @@ pub mod tribewarez_staking {
         // Update state
         stake_account.pending_rewards = 0;
         stake_account.last_reward_time = clock.unix_timestamp;
-        stake_account.total_rewards_claimed = stake_account.total_rewards_claimed
+        stake_account.total_rewards_claimed = stake_account
+            .total_rewards_claimed
             .checked_add(total_rewards)
             .ok_or(StakingError::MathOverflow)?;
-        
-        pool.total_rewards_distributed = pool.total_rewards_distributed
+
+        pool.total_rewards_distributed = pool
+            .total_rewards_distributed
             .checked_add(total_rewards)
             .ok_or(StakingError::MathOverflow)?;
 
@@ -291,7 +302,7 @@ fn calculate_rewards(
     reward_rate: u64,
 ) -> Result<u64> {
     let time_elapsed = (current_time - last_reward_time) as u64;
-    
+
     // rewards = (staked_amount * time_elapsed * reward_rate) / 10000 / SECONDS_PER_DAY
     let rewards = (staked_amount as u128)
         .checked_mul(time_elapsed as u128)
