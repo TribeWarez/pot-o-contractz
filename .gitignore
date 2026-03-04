@@ -6,6 +6,10 @@ target/
 idl/
 types/
 
+# Deploy keypairs (never commit)
+**/target/deploy/*-keypair.json
+*-keypair.json
+
 # OS / IDE
 .DS_Store
 *.swp

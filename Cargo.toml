@@ -1,8 +1,9 @@
 [workspace]
 members = [
     "tribewarez-staking",
-    "tribewarez-vault", 
-    "tribewarez-swap"
+    "tribewarez-vault",
+    "tribewarez-swap",
+    "tribewarez-pot-o",
 ]
 resolver = "2"
 

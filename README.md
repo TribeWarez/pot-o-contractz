@@ -4,6 +4,14 @@ Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PT
 
 ## Programs Overview
 
+### 0. PoT-O Program (`tribewarez-pot-o`)
+- **Purpose**: On-chain validation of Proof of Tensor Optimizations mining proofs
+- **Features**:
+  - Config and miner registration
+  - Submit and validate PoT-O proofs (MML threshold, path distance, computation hash)
+  - Reward distribution and difficulty adjustment
+  - Claim rewards (TW-RPC-001 aligned)
+
 ### 1. Staking Program (`tribewarez-staking`)
 - **Purpose**: Stake PTtC tokens to earn rewards over time
 - **Features**:
@@ -56,6 +64,7 @@ cd programs
 anchor build
 
 # Build specific program
+anchor build -p tribewarez_pot_o
 anchor build -p tribewarez_staking
 anchor build -p tribewarez_vault
 anchor build -p tribewarez_swap
@@ -103,11 +112,12 @@ solana-keygen pubkey target/deploy/tribewarez_swap-keypair.json
 ```
 
 Update these addresses in:
-- `programs/tribewarez-staking/src/lib.rs` - `declare_id!(...)`
-- `programs/tribewarez-vault/src/lib.rs` - `declare_id!(...)`
-- `programs/tribewarez-swap/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-pot-o/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-staking/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-vault/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-swap/src/lib.rs` - `declare_id!(...)`
 - `Anchor.toml` - `[programs.*]` sections
-- `src/contracts/config.ts` - Program ID constants
+- `src/contracts/config.ts` - Program ID constants (if present)
 
 ### 4. Deploy
 
