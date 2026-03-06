@@ -3,6 +3,13 @@ name = "tribewarez-vault"
 version = "0.1.0"
 description = "PTtC Vault/Escrow Program for Tribewarez DeFi"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/TribeWarez/tribe"
+homepage = "https://defi.tribewarez.com"
+documentation = "https://docs.rs/tribewarez-vault"
+readme = "README.md"
+keywords = ["solana", "anchor", "tribewarez", "vault", "escrow", "defi", "pttc"]
+categories = ["cryptography::cryptocurrency"]
 
 [lib]
 crate-type = ["cdylib", "lib"]

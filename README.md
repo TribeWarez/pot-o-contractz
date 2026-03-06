@@ -1,5 +1,8 @@
 # Tribewarez DeFi Smart Contracts
 
+[![CI](https://img.shields.io/github/actions/workflow/status/TribeWarez/tribe/programs.yml?branch=main)](https://github.com/TribeWarez/tribe/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PTtC (Pumped TRIBE-Test Coin) operations.
 
 ## Programs Overview
@@ -217,6 +220,10 @@ VITE_RPC_ENDPOINT=https://api.mainnet-beta.solana.com
 VITE_RPC_ENDPOINT_API_KEY=your-helius-api-key
 ```
 
+## Publishing (crates.io)
+
+The program crates (`tribewarez-pot-o`, `tribewarez-staking`, `tribewarez-vault`, `tribewarez-swap`) include Cargo metadata suitable for crates.io (license, repository, documentation, readme, keywords, categories). They are not currently published to crates.io; deployment is on-chain via Anchor. If you publish in the future, use semantic versioning and set `CARGO_REGISTRY_TOKEN` for any release workflow.
+
 ## Support
 
 - Website: https://tribewarez.com
@@ -225,4 +232,4 @@ VITE_RPC_ENDPOINT_API_KEY=your-helius-api-key
 
 ## License
 
-MIT License - See LICENSE file for details.
+MIT License - See [LICENSE](LICENSE) file for details.
