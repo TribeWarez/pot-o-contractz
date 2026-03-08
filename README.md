@@ -1,6 +1,8 @@
 # Tribewarez DeFi Smart Contracts
 
-[![CI](https://img.shields.io/github/actions/workflow/status/TribeWarez/tribe/programs.yml?branch=main)](https://github.com/TribeWarez/tribe/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/TribeWarez/pot-o-contractz/ci.yml?branch=main&label=CI)](https://github.com/TribeWarez/pot-o-contractz/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/actions/workflow/status/TribeWarez/pot-o-contractz/release.yml?label=Release)](https://github.com/TribeWarez/pot-o-contractz/actions/workflows/release.yml)
+[![Auto Tag](https://img.shields.io/github/actions/workflow/status/TribeWarez/pot-o-contractz/tag.yml?branch=main&label=Auto+Tag)](https://github.com/TribeWarez/pot-o-contractz/actions/workflows/tag.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PTtC (Pumped TRIBE-Test Coin) operations.
