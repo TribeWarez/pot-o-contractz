@@ -70,6 +70,11 @@ pub struct SimpleSwapCalculator {
 }
 
 impl SimpleSwapCalculator {
+    /// Create a new simple swap calculator with specified fee rates.
+    ///
+    /// # Arguments
+    /// * `swap_fee_bps` - Swap fee in basis points (100 = 1%)
+    /// * `protocol_fee_bps` - Protocol fee in basis points
     pub fn new(swap_fee_bps: u64, protocol_fee_bps: u64) -> Self {
         SimpleSwapCalculator {
             swap_fee_bps,
@@ -77,6 +82,7 @@ impl SimpleSwapCalculator {
         }
     }
 
+    /// Create a simple swap calculator with default fee rates (0.30% swap, 0.05% protocol).
     pub fn default_fees() -> Self {
         SimpleSwapCalculator {
             swap_fee_bps: 30,
@@ -190,6 +196,7 @@ impl SwapCalculator for SimpleSwapCalculator {
     }
 }
 
+
 /// Tensor-aware swap calculator (v0.2.0).
 ///
 /// Extends SimpleSwapCalculator with:
@@ -205,6 +212,12 @@ pub struct TensorSwapCalculator {
 }
 
 impl TensorSwapCalculator {
+    /// Create a new tensor-aware swap calculator (v0.2.0).
+    ///
+    /// # Arguments
+    /// * `swap_fee_bps` - Base swap fee in basis points
+    /// * `protocol_fee_bps` - Base protocol fee in basis points
+    /// * `s_max` - Maximum entropy (1e6 scale) for coherence calculations
     pub fn new(swap_fee_bps: u64, protocol_fee_bps: u64, s_max: u64) -> Self {
         TensorSwapCalculator {
             base_swap_fee_bps: swap_fee_bps,

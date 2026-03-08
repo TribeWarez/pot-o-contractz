@@ -40,6 +40,10 @@ pub trait VaultSecurityProvider {
 pub struct SimpleVaultSecurity;
 
 impl SimpleVaultSecurity {
+    /// Create a new simple vault security provider.
+    ///
+    /// This provider enforces basic time-locks on vault withdrawals
+    /// with no additional fees or tensor network features.
     pub fn new() -> Self {
         SimpleVaultSecurity
     }
@@ -97,6 +101,11 @@ pub struct TensorVaultSecurity {
 }
 
 impl TensorVaultSecurity {
+    /// Create a new tensor-aware vault security provider (v0.2.0).
+    ///
+    /// # Arguments
+    /// * `s_max` - Maximum entropy (1e6 scale) for unlock calculations
+    /// * `base_fee_percent` - Base early withdrawal fee in basis points
     pub fn new(s_max: u64, base_fee_percent: u64) -> Self {
         TensorVaultSecurity {
             s_max,
