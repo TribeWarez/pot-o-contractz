@@ -10,14 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test
-      - run: cargo publish -p tribewarez-staking --token "${{ secrets.CARGO_REGISTRY_TOKEN }}"
-      - run: cargo publish -p tribewarez-vault --token "${{ secrets.CARGO_REGISTRY_TOKEN }}"
-      - run: cargo publish -p tribewarez-swap --token "${{ secrets.CARGO_REGISTRY_TOKEN }}"
-      - run: cargo publish -p tribewarez-pot-o --token "${{ secrets.CARGO_REGISTRY_TOKEN }}"
+      - run: cargo publish -p tribewarez-staking
+      - run: cargo publish -p tribewarez-vault
+      - run: cargo publish -p tribewarez-swap
+      - run: cargo publish -p tribewarez-pot-o
       - uses: softprops/action-gh-release@v2
         if: success()
         with:
