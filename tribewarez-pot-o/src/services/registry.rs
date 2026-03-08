@@ -125,7 +125,7 @@ mod tests {
 
     #[test]
     fn test_legacy_registry() {
-        let registry = ServiceRegistry::new_legacy();
+        let mut registry = ServiceRegistry::new_legacy();
         assert!(!registry.is_tensor_aware());
         assert!(registry.tensor_pool_mut().is_none());
     }

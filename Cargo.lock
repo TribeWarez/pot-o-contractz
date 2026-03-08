@@ -1485,6 +1485,8 @@ dependencies = [
 [[package]]
 name = "pot-o-core"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2be29e35177072a137f212754f106b9fb590f2db27447a6444d5c3e127d18205"
 dependencies = [
  "chrono",
  "hex",

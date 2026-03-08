@@ -23,7 +23,7 @@ default = []
 
 [dependencies]
 anchor-lang = { workspace = true }
-pot-o-core = { path = "../../pot-o-validator/core", version = "0.2.0" }
+pot-o-core = "0.2.0"
 
 [lints]
 workspace = true
