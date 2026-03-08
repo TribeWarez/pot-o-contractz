@@ -196,7 +196,6 @@ impl SwapCalculator for SimpleSwapCalculator {
     }
 }
 
-
 /// Tensor-aware swap calculator (v0.2.0).
 ///
 /// Extends SimpleSwapCalculator with:

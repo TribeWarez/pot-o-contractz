@@ -406,7 +406,6 @@ pub struct ProofParams {
     pub computation_hash: [u8; 32],
 }
 
-
 /// Global PoT-O configuration account.
 /// Stores network-wide settings for proof validation, reward distribution, and tensor network parameters.
 /// This is a singleton account (one per program) created by the admin during initialization.
@@ -434,29 +433,28 @@ pub struct PotOConfig {
     // --- v0.2.0 Tensor Network Extensions ---
     // New fields added at end for ABI compatibility
     /// Whether tensor network enhancements are enabled
-    pub tensor_enabled: u8,         // 0 = disabled, 1 = enabled
+    pub tensor_enabled: u8, // 0 = disabled, 1 = enabled
     /// Maximum entropy (1e6 scale)
-    pub s_max: u64,                 // Maximum entropy (1e6 scale)
+    pub s_max: u64, // Maximum entropy (1e6 scale)
     /// Quantum bond dimension for tensor network calculations
-    pub bond_dimension: u32,        // Quantum bond dimension
+    pub bond_dimension: u32, // Quantum bond dimension
     /// Maximum miners allowed per entanglement pool
-    pub max_pool_size: u32,         // Maximum miners per pool
+    pub max_pool_size: u32, // Maximum miners per pool
     /// Weight factor for entropy in reward calculations (1e6 scale)
     pub entropy_weight_factor: u64, // Entropy weight in 1e6 scale
     /// Current network-wide entropy measurement
-    pub network_entropy: u64,       // Current network entropy
+    pub network_entropy: u64, // Current network entropy
     /// Total number of active miners in the network
-    pub total_miners: u32,          // Number of active miners
+    pub total_miners: u32, // Number of active miners
     /// Number of active entanglement pools
-    pub active_pools: u32,          // Number of entanglement pools
+    pub active_pools: u32, // Number of entanglement pools
     /// Average coherence score across all devices (1e6 scale)
-    pub average_coherence: u64,     // Average device coherence (1e6 scale)
+    pub average_coherence: u64, // Average device coherence (1e6 scale)
 
     // Reserved for future expansion (256 bytes total)
     /// Reserved space for future updates without breaking ABI compatibility
     pub reserved: [u8; 200],
 }
-
 
 /// Per-miner account storing mining history and statistics.
 /// Created when a miner first registers. Updated each time a proof is submitted.
@@ -484,25 +482,24 @@ pub struct MinerAccount {
     // --- v0.2.0 Tensor Network Extensions ---
     // New fields added at end for ABI compatibility
     /// Vertex position in the tensor network graph
-    pub vertex_id: u32,           // Position in tensor network graph
+    pub vertex_id: u32, // Position in tensor network graph
     /// Miner's contribution to network entropy (1e6 scale)
-    pub entropy_score: u64,       // Miner's entropy contribution (1e6 scale)
+    pub entropy_score: u64, // Miner's entropy contribution (1e6 scale)
     /// Device's ability to preserve quantum coherence (1e6 scale, 0-1000000)
-    pub coherence: u64,           // Device coherence preservation (1e6 scale)
+    pub coherence: u64, // Device coherence preservation (1e6 scale)
     /// Last slot when this miner's entropy metrics were updated
     pub last_entropy_update: u64, // Last slot when entropy was updated
     /// Number of other miners this miner is entangled with
-    pub entanglement_count: u32,  // Number of entangled connections
+    pub entanglement_count: u32, // Number of entangled connections
     /// Current pool generation/epoch
-    pub pool_generation: u64,     // Generation/epoch of current pool
+    pub pool_generation: u64, // Generation/epoch of current pool
     /// Probability of unlock based on entropy (1e6 scale, 0-1000000)
-    pub unlock_probability: u64,  // P(unlock) calculated from entropy (1e6 scale)
+    pub unlock_probability: u64, // P(unlock) calculated from entropy (1e6 scale)
 
     // Reserved for future expansion (256 bytes total)
     /// Reserved space for future updates without breaking ABI compatibility
     pub reserved: [u8; 192],
 }
-
 
 /// Proof record account storing details of a submitted mining proof.
 /// Created each time a miner submits a valid proof.
@@ -527,13 +524,13 @@ pub struct ProofRecord {
 
     // --- v0.2.0 Tensor Network Extensions ---
     /// Entropy score calculated from this proof (1e6 scale)
-    pub entropy_score: u64,  // Calculated entropy for this proof
+    pub entropy_score: u64, // Calculated entropy for this proof
     /// Whether this proof was validated using tensor-aware logic
     pub is_tensor_aware: u8, // 0 = standard, 1 = tensor-aware validation
     /// Distance traveled in the neural path
-    pub path_distance: u32,  // Neural path distance
+    pub path_distance: u32, // Neural path distance
     /// Type of device that submitted this proof
-    pub device_type: u8,     // Device type that submitted proof
+    pub device_type: u8, // Device type that submitted proof
 }
 
 // ---------------------------------------------------------------------------

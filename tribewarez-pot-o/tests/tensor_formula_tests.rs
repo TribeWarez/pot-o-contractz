@@ -240,7 +240,7 @@ fn test_pool_cooperation_entropy_bonus() {
     // Expected bonus ≈ 20%
 
     let individual_entropy = 1_000_000u64;
-    let pool_size = 3u64;
+    let _pool_size = 3u64;
     let pool_bonus = 1.2f64; // 20% bonus
 
     let pooled_entropy = (individual_entropy as f64 * pool_bonus) as u64;

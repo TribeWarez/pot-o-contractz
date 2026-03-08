@@ -523,19 +523,18 @@ pub struct StakingPool {
 
     // --- v0.2.0 Tensor Network Extensions ---
     /// Whether tensor network enhancements are enabled for this pool
-    pub tensor_enabled: u8,          // 0 = disabled, 1 = enabled
+    pub tensor_enabled: u8, // 0 = disabled, 1 = enabled
     /// Maximum entropy target for this pool (1e6 scale)
-    pub s_max: u64,                  // Maximum entropy (1e6 scale)
+    pub s_max: u64, // Maximum entropy (1e6 scale)
     /// Weight factor for entropy in reward calculations (1e6 scale)
-    pub entropy_weight: u64,         // Entropy contribution weight (1e6 scale)
+    pub entropy_weight: u64, // Entropy contribution weight (1e6 scale)
     /// Number of stakes participating in entanglement
     pub total_entangled_stakes: u32, // Number of stakes in entangled pools
     /// Sum of all stake entropy contributions
-    pub total_pool_entropy: u64,     // Sum of all stake entropies
+    pub total_pool_entropy: u64, // Sum of all stake entropies
     /// Average coherence preservation across all pool members
-    pub average_coherence: u64,      // Average coherence of pool members
+    pub average_coherence: u64, // Average coherence of pool members
 }
-
 
 /// Individual stake account tracking one user's stake in a pool.
 /// Each staker has one account per pool they're participating in.
@@ -561,17 +560,17 @@ pub struct StakeAccount {
 
     // --- v0.2.0 Tensor Network Extensions ---
     /// Stake's contribution to network entropy (1e6 scale)
-    pub entropy_score: u64,       // Stake's entropy contribution (1e6 scale)
+    pub entropy_score: u64, // Stake's entropy contribution (1e6 scale)
     /// Device's ability to preserve quantum coherence (1e6 scale, 0-1000000)
-    pub coherence: u64,           // Device coherence preservation (1e6 scale)
+    pub coherence: u64, // Device coherence preservation (1e6 scale)
     /// ID of the entanglement pool this stake belongs to (0 = not entangled)
-    pub pool_id: u32,             // Entanglement pool assignment (0 = not entangled)
+    pub pool_id: u32, // Entanglement pool assignment (0 = not entangled)
     /// Last timestamp when entropy metrics were calculated
     pub last_entropy_update: i64, // Last slot when entropy was calculated
     /// Probability of early unlock based on entropy (1e6 scale, 0-1000000)
-    pub unlock_probability: u64,  // P(early unlock) from entropy (1e6 scale)
+    pub unlock_probability: u64, // P(early unlock) from entropy (1e6 scale)
     /// Bonus multiplier from coherence contribution (1e6 scale)
-    pub coherence_bonus: u64,     // Bonus multiplier from coherence (1e6 scale)
+    pub coherence_bonus: u64, // Bonus multiplier from coherence (1e6 scale)
 }
 
 // ============ Errors ============
