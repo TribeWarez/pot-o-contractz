@@ -1,0 +1,27 @@
+name: Auto Tag
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create release tag
+        run: |
+          VERSION="v$(grep -m1 '^version' tribewarez-pot-o/Cargo.toml | sed 's/.*= *"\(.*\)"/\1/')"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$VERSION"
+            git push origin "$VERSION"
+            echo "Tag $VERSION created and pushed."
+          fi
