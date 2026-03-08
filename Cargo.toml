@@ -7,6 +7,11 @@ members = [
 ]
 resolver = "2"
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = [
+    'cfg(feature, values("anchor-debug", "custom-heap", "custom-panic", "solana"))',
+] }
+
 [workspace.dependencies]
-anchor-lang = "0.28.0"
-spl-token = "3.0"
+anchor-lang = "0.29"
+anchor-spl = "0.29"
