@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::hash::hash;
 
-declare_id!("PoToVa1idator11111111111111111111111111111");
+declare_id!("1PoToVa1idator11111111111111111111111111111");
 
 /// PoT-O: Proof of Tensor Optimizations on-chain program.
 /// Validates mining proofs submitted by the off-chain PoT-O validator,
@@ -144,7 +144,7 @@ pub mod tribewarez_pot_o {
 
     /// Request a token swap via CPI to tribewarez-swap (extension point).
     pub fn request_swap(
-        ctx: Context<RequestSwap>,
+        _ctx: Context<RequestSwap>,
         _from_token_mint: Pubkey,
         _to_token_mint: Pubkey,
         _amount: u64,

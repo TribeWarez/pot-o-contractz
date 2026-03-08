@@ -3,13 +3,14 @@ use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, Transfer}
 
 declare_id!("GPGGnKwnvKseSxzPukrNvch1CwYhifTqgj2RdW1P26H3");
 
-/// Tribewarez Swap Program
-/// Constant Product AMM (x * y = k) for PTtC token swaps.
-/// Supports liquidity provision, swaps, and fee collection.
+// Tribewarez Swap Program
+// Constant Product AMM (x * y = k) for PTtC token swaps.
+// Supports liquidity provision, swaps, and fee collection.
 
 // Fee configuration (basis points - 10000 = 100%)
 const SWAP_FEE_BPS: u64 = 30; // 0.30% swap fee
 const PROTOCOL_FEE_BPS: u64 = 5; // 0.05% protocol fee
+#[allow(dead_code)]
 const LP_FEE_BPS: u64 = 25; // 0.25% to LPs
 
 #[program]
@@ -592,7 +593,7 @@ impl IntegerSqrt for u128 {
             return 0;
         }
         let mut x = self;
-        let mut y = (x + 1) / 2;
+        let mut y = x.div_ceil(2);
         while y < x {
             x = y;
             y = (x + self / x) / 2;

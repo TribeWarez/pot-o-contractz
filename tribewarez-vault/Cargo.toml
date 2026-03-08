@@ -24,4 +24,7 @@ default = []
 
 [dependencies]
 anchor-lang = { workspace = true }
-spl-token = { workspace = true, features = ["no-entrypoint"] }
+anchor-spl = { workspace = true }
+
+[lints]
+workspace = true

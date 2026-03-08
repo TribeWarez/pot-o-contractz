@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{program::invoke_signed, system_instruction};
+use anchor_spl::token::{self, Token, Transfer};
 
 declare_id!("Go2BZRhNLoaVni3QunrKPAXYdHtwZtTXuVspxpdAeDS8");
 
@@ -69,24 +69,15 @@ pub mod tribewarez_staking {
                 .ok_or(StakingError::MathOverflow)?;
         }
 
-        // Transfer tokens from user to pool using SPL Token CPI
-        let transfer_ix = spl_token::instruction::transfer(
-            &spl_token::id(),
-            &ctx.accounts.user_token_account.key(),
-            &ctx.accounts.pool_token_account.key(),
-            &ctx.accounts.user.key(),
-            &[],
+        // Transfer tokens from user to pool using anchor-spl
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.user_token_account.to_account_info(),
+            to: ctx.accounts.pool_token_account.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+        token::transfer(
+            CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts),
             amount,
-        )?;
-
-        anchor_lang::solana_program::program::invoke(
-            &transfer_ix,
-            &[
-                ctx.accounts.user_token_account.to_account_info(),
-                ctx.accounts.pool_token_account.to_account_info(),
-                ctx.accounts.user.to_account_info(),
-                ctx.accounts.token_program.to_account_info(),
-            ],
         )?;
 
         // Update stake account
@@ -122,6 +113,9 @@ pub mod tribewarez_staking {
         require!(amount > 0, StakingError::InvalidAmount);
 
         let clock = Clock::get()?;
+        // Capture AccountInfo before the mutable borrow below: the PDA-signed CPI needs
+        // staking_pool's AccountInfo as authority, but the state update also needs &mut.
+        let pool_account_info = ctx.accounts.staking_pool.to_account_info();
         let stake_account = &mut ctx.accounts.stake_account;
         let pool = &mut ctx.accounts.staking_pool;
 
@@ -150,26 +144,20 @@ pub mod tribewarez_staking {
         // Transfer tokens back to user using PDA signer
         let token_mint = pool.token_mint;
         let seeds = &[b"staking_pool", token_mint.as_ref(), &[pool.bump]];
-        let signer_seeds = &[&seeds[..]];
+        let signer = &[&seeds[..]];
 
-        let transfer_ix = spl_token::instruction::transfer(
-            &spl_token::id(),
-            &ctx.accounts.pool_token_account.key(),
-            &ctx.accounts.user_token_account.key(),
-            &pool.key(),
-            &[],
-            amount,
-        )?;
-
-        invoke_signed(
-            &transfer_ix,
-            &[
-                ctx.accounts.pool_token_account.to_account_info(),
-                ctx.accounts.user_token_account.to_account_info(),
-                pool.to_account_info(),
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.pool_token_account.to_account_info(),
+            to: ctx.accounts.user_token_account.to_account_info(),
+            authority: pool_account_info,
+        };
+        token::transfer(
+            CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
-            ],
-            signer_seeds,
+                cpi_accounts,
+                signer,
+            ),
+            amount,
         )?;
 
         // Update stake account
@@ -197,6 +185,9 @@ pub mod tribewarez_staking {
     /// Claim accumulated rewards
     pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         let clock = Clock::get()?;
+        // Capture AccountInfo before the mutable borrow below: the PDA-signed CPI needs
+        // staking_pool's AccountInfo as authority, but the state update also needs &mut.
+        let pool_account_info = ctx.accounts.staking_pool.to_account_info();
         let stake_account = &mut ctx.accounts.stake_account;
         let pool = &mut ctx.accounts.staking_pool;
 
@@ -218,26 +209,20 @@ pub mod tribewarez_staking {
         // Transfer rewards to user using PDA signer
         let token_mint = pool.token_mint;
         let seeds = &[b"staking_pool", token_mint.as_ref(), &[pool.bump]];
-        let signer_seeds = &[&seeds[..]];
+        let signer = &[&seeds[..]];
 
-        let transfer_ix = spl_token::instruction::transfer(
-            &spl_token::id(),
-            &ctx.accounts.reward_token_account.key(),
-            &ctx.accounts.user_reward_account.key(),
-            &pool.key(),
-            &[],
-            total_rewards,
-        )?;
-
-        invoke_signed(
-            &transfer_ix,
-            &[
-                ctx.accounts.reward_token_account.to_account_info(),
-                ctx.accounts.user_reward_account.to_account_info(),
-                pool.to_account_info(),
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.reward_token_account.to_account_info(),
+            to: ctx.accounts.user_reward_account.to_account_info(),
+            authority: pool_account_info,
+        };
+        token::transfer(
+            CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
-            ],
-            signer_seeds,
+                cpi_accounts,
+                signer,
+            ),
+            total_rewards,
         )?;
 
         // Update state
@@ -345,7 +330,7 @@ pub struct InitializePool<'info> {
     pub reward_token_account: AccountInfo<'info>,
 
     /// CHECK: SPL Token program
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
@@ -378,8 +363,7 @@ pub struct Stake<'info> {
     #[account(mut)]
     pub pool_token_account: AccountInfo<'info>,
 
-    /// CHECK: SPL Token program
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
@@ -411,8 +395,7 @@ pub struct Unstake<'info> {
     #[account(mut)]
     pub pool_token_account: AccountInfo<'info>,
 
-    /// CHECK: SPL Token program
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -443,8 +426,7 @@ pub struct ClaimRewards<'info> {
     #[account(mut)]
     pub reward_token_account: AccountInfo<'info>,
 
-    /// CHECK: SPL Token program
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
