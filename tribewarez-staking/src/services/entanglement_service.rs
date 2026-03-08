@@ -48,12 +48,7 @@ pub trait EntanglementService {
     ) -> u64;
 
     /// Check if pools should be merged (high mutual info suggests coupling).
-    fn should_merge_pools(
-        &self,
-        pool_a_entropy: u64,
-        pool_b_entropy: u64,
-        threshold: u64,
-    ) -> bool;
+    fn should_merge_pools(&self, pool_a_entropy: u64, pool_b_entropy: u64, threshold: u64) -> bool;
 }
 
 /// Simple entanglement service (v0.1.x compatible).
@@ -106,7 +101,12 @@ impl EntanglementService for SimpleEntanglementService {
         0
     }
 
-    fn should_merge_pools(&self, _pool_a_entropy: u64, _pool_b_entropy: u64, _threshold: u64) -> bool {
+    fn should_merge_pools(
+        &self,
+        _pool_a_entropy: u64,
+        _pool_b_entropy: u64,
+        _threshold: u64,
+    ) -> bool {
         false
     }
 }
@@ -181,7 +181,8 @@ impl EntanglementService for TensorEntanglementService {
             pool.total_entropy = pool.total_entropy.saturating_add(entropy);
             pool.miner_count = pool.miner_count.saturating_add(1);
             // Recalculate average coherence
-            pool.average_coherence = pool.total_entropy
+            pool.average_coherence = pool
+                .total_entropy
                 .checked_div(pool.miner_count as u64)
                 .unwrap_or(coherence);
         }
@@ -204,23 +205,20 @@ impl EntanglementService for TensorEntanglementService {
     ) -> u64 {
         // I(A:B) = S(A) + S(B) - S(A∪B)
         // Simplified: I ≈ shared_coherence * min(S_A, S_B) / S_max
-        let combined = pool_a_entropy.saturating_add(pool_b_entropy);
+        let _combined = pool_a_entropy.saturating_add(pool_b_entropy);
         let min_entropy = pool_a_entropy.min(pool_b_entropy);
 
         (shared_coherence as u128)
             .checked_mul(min_entropy as u128)
-            .unwrap_or(0) as u64 / self.s_max.max(1)
+            .unwrap_or(0) as u64
+            / self.s_max.max(1)
     }
 
-    fn should_merge_pools(
-        &self,
-        pool_a_entropy: u64,
-        pool_b_entropy: u64,
-        threshold: u64,
-    ) -> bool {
+    fn should_merge_pools(&self, pool_a_entropy: u64, pool_b_entropy: u64, threshold: u64) -> bool {
         // Merge if mutual information exceeds threshold
         let shared_coherence = 1_000_000u64; // Assume perfect coherence for merge decision
-        let mutual_info = self.calculate_mutual_information(pool_a_entropy, pool_b_entropy, shared_coherence);
+        let mutual_info =
+            self.calculate_mutual_information(pool_a_entropy, pool_b_entropy, shared_coherence);
         mutual_info > threshold
     }
 }
@@ -274,7 +272,12 @@ impl EntanglementService for MockEntanglementService {
         0
     }
 
-    fn should_merge_pools(&self, _pool_a_entropy: u64, _pool_b_entropy: u64, _threshold: u64) -> bool {
+    fn should_merge_pools(
+        &self,
+        _pool_a_entropy: u64,
+        _pool_b_entropy: u64,
+        _threshold: u64,
+    ) -> bool {
         false
     }
 }

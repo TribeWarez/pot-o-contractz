@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
+use std::result::Result as StdResult;
 
 /// Result type for vault operations.
-pub type VaultResult<T> = Result<T, VaultError>;
+pub type VaultResult<T> = StdResult<T, VaultError>;
 
 /// Vault-specific errors.
 #[derive(Debug, Clone, Copy)]
@@ -105,11 +106,7 @@ impl TensorVaultSecurity {
 
     /// Calculate dynamic unlock time based on entropy contribution.
     /// Higher entropy = can unlock earlier.
-    pub fn calculate_dynamic_unlock_time(
-        &self,
-        base_lock_time: i64,
-        entropy_score: u64,
-    ) -> i64 {
+    pub fn calculate_dynamic_unlock_time(&self, base_lock_time: i64, entropy_score: u64) -> i64 {
         // Entropy-based reduction: up to 50% earlier with max entropy
         let reduction_percent = (entropy_score as f64 / self.s_max as f64) * 50.0;
         let reduction_seconds = ((base_lock_time as f64) * reduction_percent / 100.0) as i64;
@@ -117,6 +114,7 @@ impl TensorVaultSecurity {
     }
 
     /// Calculate early withdrawal fee based on time remaining and entropy.
+    #[allow(dead_code)]
     fn fee_formula(&self, amount: u64, time_remaining: i64, entropy_score: u64) -> u64 {
         if time_remaining <= 0 {
             return 0;
@@ -158,8 +156,7 @@ impl VaultSecurityProvider for TensorVaultSecurity {
             return 0;
         }
 
-        let base_fee = (amount as u128 * self.base_fee_percent as u128 / 10000) as u64;
-        base_fee
+        (amount as u128 * self.base_fee_percent as u128 / 10000) as u64
     }
 
     fn check_authorization(&self, owner: Pubkey, request_signer: Pubkey) -> VaultResult<()> {

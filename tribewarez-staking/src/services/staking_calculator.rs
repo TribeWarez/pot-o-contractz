@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
+use std::result::Result as StdResult;
 
 /// Result type for staking operations.
-pub type StakingResult<T> = Result<T, StakingError>;
+pub type StakingResult<T> = StdResult<T, StakingError>;
 
 /// Staking-specific errors.
 #[derive(Debug, Clone, Copy)]
@@ -121,6 +121,7 @@ impl StakingCalculator for SimpleStakingCalculator {
 /// - Stakes with high entropy have higher unlock probability
 /// - Early unlock reduces lock period by entropy percentage
 /// - Bonus rewards proportional to coherence
+#[allow(dead_code)]
 pub struct TensorAwareStakingCalculator {
     s_max: u64,
     entropy_weight: f64,
@@ -149,7 +150,8 @@ impl TensorAwareStakingCalculator {
         let x_cubed = (x / ONE) * (x / ONE) * (x / ONE) / ONE;
         let x_fifth = x_cubed * (x / ONE) * (x / ONE) / ONE;
 
-        x.saturating_sub(x_cubed / 3).saturating_add(2 * x_fifth / 15)
+        x.saturating_sub(x_cubed / 3)
+            .saturating_add(2 * x_fifth / 15)
     }
 }
 

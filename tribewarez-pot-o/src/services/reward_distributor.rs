@@ -101,7 +101,8 @@ impl RewardDistributor for SimpleRewardDistributor {
         miner_shares
             .iter()
             .map(|(miner, weight)| {
-                let miner_reward = (total_reward as u128 * *weight as u128 / total_weight as u128) as u64;
+                let miner_reward =
+                    (total_reward as u128 * *weight as u128 / total_weight as u128) as u64;
                 (*miner, miner_reward)
             })
             .collect()
@@ -124,10 +125,10 @@ impl RewardDistributor for SimpleRewardDistributor {
 /// Reward formula:
 /// total_reward = base * (1 + entropy_weight) * coherence_multiplier * pool_bonus
 pub struct TensorWeightedRewardDistributor {
-    s_max: u64,                // Maximum entropy (1e6 scale)
-    entropy_weight_factor: f64, // Entropy contribution weight (0.5 = 50% bonus at max entropy)
+    s_max: u64,                      // Maximum entropy (1e6 scale)
+    entropy_weight_factor: f64,      // Entropy contribution weight (0.5 = 50% bonus at max entropy)
     coherence_multipliers: [f64; 4], // Device coherence reward bonus
-    pool_bonus_percent: u32,   // Bonus for miners in pools (e.g., 5%)
+    pool_bonus_percent: u32,         // Bonus for miners in pools (e.g., 5%)
 }
 
 impl TensorWeightedRewardDistributor {
@@ -284,7 +285,8 @@ impl RewardDistributor for MockRewardDistributor {
         miner_shares
             .iter()
             .map(|(miner, weight)| {
-                let miner_reward = (total_reward as u128 * *weight as u128 / total_weight as u128) as u64;
+                let miner_reward =
+                    (total_reward as u128 * *weight as u128 / total_weight as u128) as u64;
                 (*miner, miner_reward)
             })
             .collect()

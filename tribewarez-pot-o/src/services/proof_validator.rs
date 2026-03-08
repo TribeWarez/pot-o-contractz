@@ -1,8 +1,8 @@
-use anchor_lang::prelude::*;
 use anchor_lang::solana_program::hash::hash;
+use std::result::Result as StdResult;
 
 /// Result type for proof validation operations.
-pub type ValidationResult<T> = Result<T, ValidationError>;
+pub type ValidationResult<T> = StdResult<T, ValidationError>;
 
 /// Validation errors that can occur during proof validation.
 #[derive(Debug, Clone, Copy)]
@@ -237,7 +237,8 @@ impl ProofValidator for TensorAwareProofValidator {
     ) -> ValidationResult<ValidatedProof> {
         // First pass: standard validation
         let standard = StandardProofValidator::new();
-        let standard_proof = standard.validate(proof, current_slot, mml_threshold, path_distance_max)?;
+        let standard_proof =
+            standard.validate(proof, current_slot, mml_threshold, path_distance_max)?;
 
         // Second pass: tensor entropy checks
         let entropy_score = self.calculate_entropy_score(proof.mml_score, proof.path_distance);
@@ -263,12 +264,11 @@ impl ProofValidator for TensorAwareProofValidator {
         target_proofs_per_period: u64,
     ) -> u64 {
         // Base adjustment from standard validator
-        let base_adjustment = StandardProofValidator::new()
-            .recommend_difficulty_adjustment(
-                current_difficulty,
-                total_proofs_last_period,
-                target_proofs_per_period,
-            );
+        let base_adjustment = StandardProofValidator::new().recommend_difficulty_adjustment(
+            current_difficulty,
+            total_proofs_last_period,
+            target_proofs_per_period,
+        );
 
         // In tensor-aware mode, penalize if too few proofs (entropy declining)
         // This encourages more mining to maintain network coherence
@@ -295,9 +295,7 @@ pub struct MockProofValidator {
 #[cfg(test)]
 impl MockProofValidator {
     pub fn new() -> Self {
-        MockProofValidator {
-            always_fail: false,
-        }
+        MockProofValidator { always_fail: false }
     }
 
     pub fn with_failure(mut self) -> Self {

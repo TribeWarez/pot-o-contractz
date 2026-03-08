@@ -19,12 +19,7 @@ pub trait MinerManager {
     fn register_miner(&self, authority: Pubkey, device_type: u8) -> Result<()>;
 
     /// Record a successful proof submission.
-    fn record_proof(
-        &self,
-        miner: Pubkey,
-        slot: u64,
-        reward: u64,
-    ) -> Result<()>;
+    fn record_proof(&self, miner: Pubkey, slot: u64, reward: u64) -> Result<()>;
 
     /// Update miner reputation based on various metrics.
     fn update_reputation(&self, miner: Pubkey, delta: i64) -> Result<()>;
@@ -88,11 +83,11 @@ impl MinerManager for StandardMinerManager {
     fn get_difficulty_multiplier(&self, device_type: u8) -> f64 {
         // Device type difficulty scaling (standard v0.1.x)
         match device_type {
-            0 => 1.0,   // CPU: baseline
-            1 => 2.0,   // GPU: 2x faster
-            2 => 4.0,   // ASIC: 4x faster
-            3 => 0.5,   // Mobile: 0.5x (throttled)
-            _ => 1.0,   // Unknown: baseline
+            0 => 1.0, // CPU: baseline
+            1 => 2.0, // GPU: 2x faster
+            2 => 4.0, // ASIC: 4x faster
+            3 => 0.5, // Mobile: 0.5x (throttled)
+            _ => 1.0, // Unknown: baseline
         }
     }
 }
@@ -108,9 +103,10 @@ impl MinerManager for StandardMinerManager {
 /// - Miners form entangled pools that maximize mutual information
 /// - Coherence penalty for devices with higher decoherence rates
 /// - Reputation weighted by proof entropy (not just count)
+#[allow(dead_code)]
 pub struct TensorAwareMinerManager {
     max_pool_size: u32,
-    entropy_weight: f64,    // How much entropy affects reward multiplier
+    entropy_weight: f64,         // How much entropy affects reward multiplier
     coherence_factors: [f64; 4], // Device coherence preservation (0-1)
 }
 
@@ -189,10 +185,10 @@ impl MinerManager for TensorAwareMinerManager {
     fn get_difficulty_multiplier(&self, device_type: u8) -> f64 {
         // In tensor-aware mode, penalize devices with poor coherence
         let base_multiplier = match device_type {
-            0 => 1.0,   // CPU
-            1 => 2.0,   // GPU
-            2 => 4.0,   // ASIC
-            3 => 0.5,   // Mobile
+            0 => 1.0, // CPU
+            1 => 2.0, // GPU
+            2 => 4.0, // ASIC
+            3 => 0.5, // Mobile
             _ => 1.0,
         };
 

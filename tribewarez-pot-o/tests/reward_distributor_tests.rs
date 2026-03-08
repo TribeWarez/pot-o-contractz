@@ -6,13 +6,13 @@
 // 3. Penalty calculations
 // 4. Pool reward distribution
 
-use std::str::FromStr;
 use solana_sdk::pubkey::Pubkey;
+use std::str::FromStr;
 
 // Mock implementations for testing (without Anchor dependencies)
 mod mock_rewards {
-    use std::str::FromStr;
     use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
 
     #[derive(Clone, Copy)]
     pub struct RewardAllocation {
@@ -66,8 +66,7 @@ mod mock_rewards {
         }
 
         fn apply_penalty(&self, pending_rewards: u64, penalty_percent: u32) -> u64 {
-            let penalty =
-                (pending_rewards as u128 * penalty_percent as u128 / 100) as u64;
+            let penalty = (pending_rewards as u128 * penalty_percent as u128 / 100) as u64;
             pending_rewards.saturating_sub(penalty)
         }
 
@@ -88,8 +87,8 @@ mod mock_rewards {
             miner_shares
                 .iter()
                 .map(|(miner, weight)| {
-                    let miner_reward = (total_reward as u128 * *weight as u128
-                        / total_weight as u128) as u64;
+                    let miner_reward =
+                        (total_reward as u128 * *weight as u128 / total_weight as u128) as u64;
                     (*miner, miner_reward)
                 })
                 .collect()
@@ -115,8 +114,7 @@ mod mock_rewards {
         }
 
         pub fn calculate_entropy_multiplier(&self, entropy_score: u64) -> f64 {
-            1.0 + (entropy_score as f64 / self.s_max as f64)
-                * self.entropy_weight_factor
+            1.0 + (entropy_score as f64 / self.s_max as f64) * self.entropy_weight_factor
         }
 
         pub fn get_coherence_multiplier(&self, device_type: u8) -> f64 {
@@ -161,8 +159,7 @@ mod mock_rewards {
         }
 
         fn apply_penalty(&self, pending_rewards: u64, penalty_percent: u32) -> u64 {
-            let penalty =
-                (pending_rewards as u128 * penalty_percent as u128 / 100) as u64;
+            let penalty = (pending_rewards as u128 * penalty_percent as u128 / 100) as u64;
             pending_rewards.saturating_sub(penalty)
         }
 
@@ -187,8 +184,8 @@ mod mock_rewards {
             miner_shares
                 .iter()
                 .map(|(miner, weight)| {
-                    let miner_reward = (adjusted_reward as u128 * *weight as u128
-                        / total_weight as u128) as u64;
+                    let miner_reward =
+                        (adjusted_reward as u128 * *weight as u128 / total_weight as u128) as u64;
                     (*miner, miner_reward)
                 })
                 .collect()
@@ -256,24 +253,33 @@ fn test_simple_reward_penalty() {
 fn test_simple_reward_pool_distribution() {
     let distributor = SimpleRewardDistributor::new();
     let miners = vec![
-        (Pubkey::from_str("11111111111111111111111111111111").unwrap(), 10u32),
-        (Pubkey::from_str("22222222222222222222222222222222").unwrap(), 20u32),
-        (Pubkey::from_str("33333333333333333333333333333333").unwrap(), 30u32),
+        (
+            Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            10u32,
+        ),
+        (
+            Pubkey::from_str("22222222222222222222222222222222").unwrap(),
+            20u32,
+        ),
+        (
+            Pubkey::from_str("33333333333333333333333333333333").unwrap(),
+            30u32,
+        ),
     ];
 
     let distribution = distributor.distribute_pool_reward(1000, &miners);
 
     assert_eq!(distribution.len(), 3);
-    
+
     // Expected: 1000 * 10/(10+20+30) = 166, 1000 * 20/60 = 333, 1000 * 30/60 = 500
     // Due to integer division, might be slightly off
     let total: u64 = distribution.iter().map(|(_, r)| r).sum();
     assert_eq!(total, 1000);
 
     // Verify proportions (approximately)
-    assert!(distribution[0].1 > 100);  // First miner gets less
-    assert!(distribution[1].1 > 250);  // Second miner gets more
-    assert!(distribution[2].1 > 450);  // Third miner gets most
+    assert!(distribution[0].1 > 100); // First miner gets less
+    assert!(distribution[1].1 > 250); // Second miner gets more
+    assert!(distribution[2].1 > 450); // Third miner gets most
 }
 
 #[test]
@@ -290,7 +296,7 @@ fn test_tensor_reward_device_coherence_multiplier() {
     // ASIC should have highest reward
     assert!(reward_asic.total_reward > reward_gpu.total_reward);
     assert!(reward_gpu.total_reward > reward_cpu.total_reward);
-    
+
     // Mobile has lower coherence
     assert!(reward_mobile.total_reward < reward_cpu.total_reward);
 }
@@ -302,7 +308,7 @@ fn test_tensor_reward_reputation_scaling() {
 
     // Low reputation
     let reward_low = distributor.calculate_reward(1000, 50, pool, 1);
-    
+
     // High reputation
     let reward_high = distributor.calculate_reward(1000, 500, pool, 1);
 
@@ -351,14 +357,20 @@ fn test_tensor_reputation_multiplier() {
 fn test_tensor_pool_reward_distribution_with_bonus() {
     let distributor = TensorWeightedRewardDistributor::new(1_000_000, 0.5);
     let miners = vec![
-        (Pubkey::from_str("11111111111111111111111111111111").unwrap(), 10u32),
-        (Pubkey::from_str("22222222222222222222222222222222").unwrap(), 20u32),
+        (
+            Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            10u32,
+        ),
+        (
+            Pubkey::from_str("22222222222222222222222222222222").unwrap(),
+            20u32,
+        ),
     ];
 
     let distribution = distributor.distribute_pool_reward(1000, &miners);
 
     assert_eq!(distribution.len(), 2);
-    
+
     // With 5% bonus: total distributed = 1050
     let total: u64 = distribution.iter().map(|(_, r)| r).sum();
     assert_eq!(total, 1050);
@@ -392,8 +404,14 @@ fn test_empty_pool_distribution() {
 fn test_zero_weight_pool_distribution() {
     let distributor = SimpleRewardDistributor::new();
     let miners = vec![
-        (Pubkey::from_str("11111111111111111111111111111111").unwrap(), 0u32),
-        (Pubkey::from_str("22222222222222222222222222222222").unwrap(), 0u32),
+        (
+            Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            0u32,
+        ),
+        (
+            Pubkey::from_str("22222222222222222222222222222222").unwrap(),
+            0u32,
+        ),
     ];
     let distribution = distributor.distribute_pool_reward(1000, &miners);
     assert_eq!(distribution.len(), 0);

@@ -6,12 +6,12 @@
 // 3. Unlock probability calculations
 // 4. Coherence bonuses
 
-use std::str::FromStr;
 use solana_sdk::pubkey::Pubkey;
+use std::str::FromStr;
 
 mod mock_staking {
-    use std::str::FromStr;
     use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
 
     #[derive(Clone, Copy)]
     pub struct StakingReward {
@@ -29,11 +29,7 @@ mod mock_staking {
             pool_id: Pubkey,
         ) -> StakingReward;
 
-        fn calculate_unlock_probability(
-            &self,
-            entropy_score: u64,
-            max_entropy: u64,
-        ) -> u64; // 0-1e6
+        fn calculate_unlock_probability(&self, entropy_score: u64, max_entropy: u64) -> u64; // 0-1e6
     }
 
     pub struct SimpleStakingCalculator {
@@ -46,14 +42,9 @@ mod mock_staking {
         }
 
         /// Time-based reward: (stake * rate * time) / (365*24*3600*10000)
-        fn calculate_base_reward(
-            &self,
-            stake_amount: u64,
-            duration_seconds: u64,
-        ) -> u64 {
-            let numerator = stake_amount as u128
-                * self.annual_rate as u128
-                * duration_seconds as u128;
+        fn calculate_base_reward(&self, stake_amount: u64, duration_seconds: u64) -> u64 {
+            let numerator =
+                stake_amount as u128 * self.annual_rate as u128 * duration_seconds as u128;
             let denominator = 365u128 * 24 * 3600 * 10000;
             (numerator / denominator) as u64
         }
@@ -95,14 +86,9 @@ mod mock_staking {
             }
         }
 
-        fn calculate_base_reward(
-            &self,
-            stake_amount: u64,
-            duration_seconds: u64,
-        ) -> u64 {
-            let numerator = stake_amount as u128
-                * self.annual_rate as u128
-                * duration_seconds as u128;
+        fn calculate_base_reward(&self, stake_amount: u64, duration_seconds: u64) -> u64 {
+            let numerator =
+                stake_amount as u128 * self.annual_rate as u128 * duration_seconds as u128;
             let denominator = 365u128 * 24 * 3600 * 10000;
             (numerator / denominator) as u64
         }
@@ -126,7 +112,7 @@ mod mock_staking {
             _pool_id: Pubkey,
         ) -> StakingReward {
             let base = self.calculate_base_reward(stake_amount, stake_duration_seconds);
-            
+
             // For now, apply 0 entropy bonus (would need entropy context in real scenario)
             let entropy_mult = 1.0;
             let coherence_bonus = 1.0;
@@ -143,11 +129,7 @@ mod mock_staking {
             }
         }
 
-        fn calculate_unlock_probability(
-            &self,
-            entropy_score: u64,
-            max_entropy: u64,
-        ) -> u64 {
+        fn calculate_unlock_probability(&self, entropy_score: u64, max_entropy: u64) -> u64 {
             if max_entropy == 0 {
                 return 0;
             }
@@ -163,11 +145,11 @@ use mock_staking::*;
 #[test]
 fn test_simple_staking_one_year() {
     let calc = SimpleStakingCalculator::new(1000); // 10% APY
-    
+
     // 1 year of staking 1000 tokens at 10%
     let duration = 365 * 24 * 3600;
     let reward = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
-    
+
     // Expected: 1000 * 10% = 100
     assert!(reward.base_reward > 95 && reward.base_reward < 105);
 }
@@ -175,11 +157,11 @@ fn test_simple_staking_one_year() {
 #[test]
 fn test_simple_staking_half_year() {
     let calc = SimpleStakingCalculator::new(1000); // 10% APY
-    
+
     // 6 months of staking
     let duration = (365 / 2) * 24 * 3600;
     let reward = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
-    
+
     // Expected: 1000 * 10% / 2 = 50
     assert!(reward.base_reward > 45 && reward.base_reward < 55);
 }
@@ -188,7 +170,7 @@ fn test_simple_staking_half_year() {
 fn test_simple_staking_zero_duration() {
     let calc = SimpleStakingCalculator::new(1000);
     let reward = calc.calculate_reward(1000, 0, Pubkey::new_unique());
-    
+
     // No time staked = 0 reward
     assert_eq!(reward.base_reward, 0);
 }
@@ -196,10 +178,10 @@ fn test_simple_staking_zero_duration() {
 #[test]
 fn test_simple_staking_ignores_entropy() {
     let calc = SimpleStakingCalculator::new(1000);
-    
+
     let reward1 = calc.calculate_unlock_probability(0, 1_000_000);
     let reward2 = calc.calculate_unlock_probability(1_000_000, 1_000_000);
-    
+
     // Both should return 100% probability
     assert_eq!(reward1, 1_000_000);
     assert_eq!(reward2, 1_000_000);
@@ -208,10 +190,10 @@ fn test_simple_staking_ignores_entropy() {
 #[test]
 fn test_tensor_staking_one_year() {
     let calc = TensorAwareStakingCalculator::new(1000, 1_000_000, 0.5);
-    
+
     let duration = 365 * 24 * 3600;
     let reward = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
-    
+
     // Base reward should match SimpleStakingCalculator
     assert!(reward.base_reward > 95 && reward.base_reward < 105);
 }
@@ -219,7 +201,7 @@ fn test_tensor_staking_one_year() {
 #[test]
 fn test_tensor_unlock_probability_zero_entropy() {
     let calc = TensorAwareStakingCalculator::new(1000, 1_000_000, 0.5);
-    
+
     let p = calc.calculate_unlock_probability(0, 1_000_000);
     // tanh(0) = 0
     assert_eq!(p, 0);
@@ -228,7 +210,7 @@ fn test_tensor_unlock_probability_zero_entropy() {
 #[test]
 fn test_tensor_unlock_probability_max_entropy() {
     let calc = TensorAwareStakingCalculator::new(1000, 1_000_000, 0.5);
-    
+
     let p = calc.calculate_unlock_probability(1_000_000, 1_000_000);
     // tanh(1.0) ≈ 0.762, so ~762_000 in fixed-point
     assert!(p > 760_000 && p < 765_000);
@@ -237,7 +219,7 @@ fn test_tensor_unlock_probability_max_entropy() {
 #[test]
 fn test_tensor_unlock_probability_half_entropy() {
     let calc = TensorAwareStakingCalculator::new(1000, 1_000_000, 0.5);
-    
+
     let p = calc.calculate_unlock_probability(500_000, 1_000_000);
     // tanh(0.5) ≈ 0.462, so ~462_000 in fixed-point
     assert!(p > 460_000 && p < 465_000);
@@ -246,11 +228,11 @@ fn test_tensor_unlock_probability_half_entropy() {
 #[test]
 fn test_tensor_unlock_probability_bounds() {
     let calc = TensorAwareStakingCalculator::new(1000, 1_000_000, 0.5);
-    
+
     // Test various entropy levels
     for entropy in (0..=1_000_000).step_by(100_000) {
         let p = calc.calculate_unlock_probability(entropy, 1_000_000);
-        
+
         // Probability should be in [0, 1e6]
         assert!(p <= 1_000_000, "Probability out of bounds: {}", p);
     }
@@ -260,13 +242,13 @@ fn test_tensor_unlock_probability_bounds() {
 fn test_simple_vs_tensor_reward_same_base() {
     let simple = SimpleStakingCalculator::new(1000);
     let tensor = TensorAwareStakingCalculator::new(1000, 1_000_000, 0.5);
-    
+
     let duration = 365 * 24 * 3600;
     let pool = Pubkey::new_unique();
-    
+
     let simple_reward = simple.calculate_reward(1000, duration as u64, pool);
     let tensor_reward = tensor.calculate_reward(1000, duration as u64, pool);
-    
+
     // Base rewards should be identical
     assert_eq!(simple_reward.base_reward, tensor_reward.base_reward);
 }
@@ -274,12 +256,12 @@ fn test_simple_vs_tensor_reward_same_base() {
 #[test]
 fn test_stake_amount_scaling() {
     let calc = SimpleStakingCalculator::new(1000); // 10% APY
-    
+
     let duration = 365 * 24 * 3600;
-    
+
     let reward_1000 = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
     let reward_2000 = calc.calculate_reward(2000, duration as u64, Pubkey::new_unique());
-    
+
     // Double stake should (approximately) double reward
     assert!(reward_2000.base_reward > reward_1000.base_reward * 2 - 10);
     assert!(reward_2000.base_reward < reward_1000.base_reward * 2 + 10);
@@ -288,10 +270,10 @@ fn test_stake_amount_scaling() {
 #[test]
 fn test_high_apr_calculation() {
     let calc = SimpleStakingCalculator::new(10000); // 100% APY (unrealistic but for testing)
-    
+
     let duration = 365 * 24 * 3600;
     let reward = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
-    
+
     // Expected: 1000 * 100% = 1000
     assert!(reward.base_reward > 995 && reward.base_reward < 1005);
 }
@@ -299,10 +281,10 @@ fn test_high_apr_calculation() {
 #[test]
 fn test_low_apr_calculation() {
     let calc = SimpleStakingCalculator::new(100); // 1% APY
-    
+
     let duration = 365 * 24 * 3600;
     let reward = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
-    
+
     // Expected: 1000 * 1% = 10
     assert!(reward.base_reward > 9 && reward.base_reward < 11);
 }
@@ -310,10 +292,10 @@ fn test_low_apr_calculation() {
 #[test]
 fn test_monthly_reward() {
     let calc = SimpleStakingCalculator::new(1200); // 12% APY
-    
+
     let duration = 30 * 24 * 3600; // 1 month
     let reward = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
-    
+
     // Expected: 1000 * 12% / 12 = 10
     assert!(reward.base_reward > 8 && reward.base_reward < 12);
 }
@@ -321,10 +303,10 @@ fn test_monthly_reward() {
 #[test]
 fn test_weekly_reward() {
     let calc = SimpleStakingCalculator::new(5200); // 52% APY
-    
+
     let duration = 7 * 24 * 3600; // 1 week
     let reward = calc.calculate_reward(1000, duration as u64, Pubkey::new_unique());
-    
+
     // Expected: 1000 * 52% / 52 = 10
     assert!(reward.base_reward > 8 && reward.base_reward < 12);
 }
@@ -332,13 +314,17 @@ fn test_weekly_reward() {
 #[test]
 fn test_unlock_probability_monotonic() {
     let calc = TensorAwareStakingCalculator::new(1000, 1_000_000, 0.5);
-    
+
     let mut prev_p = 0u64;
     for entropy in (0..=1_000_000).step_by(50_000) {
         let p = calc.calculate_unlock_probability(entropy, 1_000_000);
-        
+
         // Probability should be monotonically increasing
-        assert!(p >= prev_p, "Probability not monotonic at entropy={}", entropy);
+        assert!(
+            p >= prev_p,
+            "Probability not monotonic at entropy={}",
+            entropy
+        );
         prev_p = p;
     }
 }

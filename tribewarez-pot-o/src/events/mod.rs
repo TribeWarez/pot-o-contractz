@@ -35,11 +35,11 @@ pub struct RewardDistributed {
 /// (NEW in v0.2.0)
 #[event]
 pub struct EntropyStateUpdated {
-    pub network_entropy: u64,    // S_network in 1e6 scale
-    pub max_entropy: u64,        // S_max in 1e6 scale
-    pub total_miners: u32,       // Number of miners in network
-    pub active_pools: u32,       // Number of entanglement pools
-    pub average_coherence: u64,  // Average device coherence (1e6 scale)
+    pub network_entropy: u64,   // S_network in 1e6 scale
+    pub max_entropy: u64,       // S_max in 1e6 scale
+    pub total_miners: u32,      // Number of miners in network
+    pub active_pools: u32,      // Number of entanglement pools
+    pub average_coherence: u64, // Average device coherence (1e6 scale)
     pub slot: u64,
     pub timestamp: i64,
 }

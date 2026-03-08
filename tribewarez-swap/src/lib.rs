@@ -2,18 +2,22 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, Transfer};
 
 // Module declarations
-pub mod services;
 pub mod events;
+pub mod services;
+
+// Re-export events for use in instructions
+use events::{
+    FeesWithdrawn, LiquidityAdded, LiquidityRemoved, PoolInitialized, SwapQuote, Swapped,
+};
 
 declare_id!("GPGGnKwnvKseSxzPukrNvch1CwYhifTqgj2RdW1P26H3");
 
 /// Tribewarez Swap Program
 /// Constant Product AMM (x * y = k) for PTtC token swaps.
 /// Supports liquidity provision, swaps, and fee collection.
-/// 
+///
 /// v0.2.0 includes tensor network support for dynamic fee discounts
 /// based on coherence and quantum entanglement calculations.
-
 // Fee configuration (basis points - 10000 = 100%)
 const SWAP_FEE_BPS: u64 = 30; // 0.30% swap fee
 const PROTOCOL_FEE_BPS: u64 = 5; // 0.05% protocol fee
@@ -877,61 +881,6 @@ pub struct LiquidityPool {
     pub bump: u8,
     pub is_active: bool,
     pub created_at: i64,
-}
-
-// ============ Events ============
-
-#[event]
-pub struct PoolInitialized {
-    pub pool: Pubkey,
-    pub token_a_mint: Pubkey,
-    pub token_b_mint: Pubkey,
-    pub lp_mint: Pubkey,
-}
-
-#[event]
-pub struct LiquidityAdded {
-    pub pool: Pubkey,
-    pub user: Pubkey,
-    pub amount_a: u64,
-    pub amount_b: u64,
-    pub lp_tokens: u64,
-}
-
-#[event]
-pub struct LiquidityRemoved {
-    pub pool: Pubkey,
-    pub user: Pubkey,
-    pub amount_a: u64,
-    pub amount_b: u64,
-    pub lp_tokens: u64,
-}
-
-#[event]
-pub struct Swapped {
-    pub pool: Pubkey,
-    pub user: Pubkey,
-    pub token_in: Pubkey,
-    pub token_out: Pubkey,
-    pub amount_in: u64,
-    pub amount_out: u64,
-    pub fee: u64,
-}
-
-#[event]
-pub struct SwapQuote {
-    pub pool: Pubkey,
-    pub amount_in: u64,
-    pub amount_out: u64,
-    pub fee: u64,
-    pub price_impact_bps: u64,
-}
-
-#[event]
-pub struct FeesWithdrawn {
-    pub pool: Pubkey,
-    pub amount_a: u64,
-    pub amount_b: u64,
 }
 
 // ============ Errors ============

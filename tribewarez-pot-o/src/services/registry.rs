@@ -1,8 +1,7 @@
 use super::{
-    ProofValidator, StandardProofValidator, TensorAwareProofValidator,
-    MinerManager, StandardMinerManager, TensorAwareMinerManager,
-    RewardDistributor, SimpleRewardDistributor, TensorWeightedRewardDistributor,
-    TensorPoolService, StandardTensorPool,
+    MinerManager, ProofValidator, RewardDistributor, SimpleRewardDistributor, StandardMinerManager,
+    StandardProofValidator, StandardTensorPool, TensorAwareMinerManager, TensorAwareProofValidator,
+    TensorPoolService, TensorWeightedRewardDistributor,
 };
 
 /// Service registry that combines all DI services for proof validation and reward distribution.
@@ -77,7 +76,9 @@ impl ServiceRegistry {
     /// Get a reference to the proof validator.
     pub fn proof_validator(&self) -> &dyn ProofValidator {
         match self {
-            ServiceRegistry::Legacy { proof_validator, .. } => proof_validator,
+            ServiceRegistry::Legacy {
+                proof_validator, ..
+            } => proof_validator,
             ServiceRegistry::TensorAware {
                 proof_validator, ..
             } => proof_validator,
@@ -88,9 +89,7 @@ impl ServiceRegistry {
     pub fn miner_manager(&self) -> &dyn MinerManager {
         match self {
             ServiceRegistry::Legacy { miner_manager, .. } => miner_manager,
-            ServiceRegistry::TensorAware {
-                miner_manager, ..
-            } => miner_manager,
+            ServiceRegistry::TensorAware { miner_manager, .. } => miner_manager,
         }
     }
 
@@ -98,12 +97,10 @@ impl ServiceRegistry {
     pub fn reward_distributor(&self) -> &dyn RewardDistributor {
         match self {
             ServiceRegistry::Legacy {
-                reward_distributor,
-                ..
+                reward_distributor, ..
             } => reward_distributor,
             ServiceRegistry::TensorAware {
-                reward_distributor,
-                ..
+                reward_distributor, ..
             } => reward_distributor,
         }
     }
@@ -112,9 +109,7 @@ impl ServiceRegistry {
     pub fn tensor_pool_mut(&mut self) -> Option<&mut dyn TensorPoolService> {
         match self {
             ServiceRegistry::Legacy { .. } => None,
-            ServiceRegistry::TensorAware {
-                tensor_pool, ..
-            } => Some(tensor_pool.as_mut()),
+            ServiceRegistry::TensorAware { tensor_pool, .. } => Some(tensor_pool.as_mut()),
         }
     }
 

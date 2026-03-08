@@ -4,7 +4,6 @@ use anchor_lang::prelude::*;
 #[event]
 pub struct PoolInitialized {
     pub pool: Pubkey,
-    pub authority: Pubkey,
     pub token_a_mint: Pubkey,
     pub token_b_mint: Pubkey,
     pub lp_mint: Pubkey,
@@ -14,40 +13,48 @@ pub struct PoolInitialized {
 #[event]
 pub struct LiquidityAdded {
     pub pool: Pubkey,
-    pub provider: Pubkey,
+    pub user: Pubkey,
     pub amount_a: u64,
     pub amount_b: u64,
-    pub lp_tokens_minted: u64,
-    pub pool_coherence: u64,  // v0.2.0
+    pub lp_tokens: u64,
 }
 
 /// Emitted when liquidity is removed.
 #[event]
 pub struct LiquidityRemoved {
     pub pool: Pubkey,
-    pub provider: Pubkey,
-    pub lp_tokens_burned: u64,
+    pub user: Pubkey,
     pub amount_a: u64,
     pub amount_b: u64,
+    pub lp_tokens: u64,
 }
 
 /// Emitted when a swap is executed.
 #[event]
-pub struct SwapExecuted {
+pub struct Swapped {
     pub pool: Pubkey,
-    pub trader: Pubkey,
+    pub user: Pubkey,
+    pub token_in: Pubkey,
+    pub token_out: Pubkey,
     pub amount_in: u64,
     pub amount_out: u64,
-    pub swap_fee: u64,
-    pub price_impact: u64,  // Basis points
-    pub coherence_discount: u64,  // v0.2.0
+    pub fee: u64,
 }
 
-/// Emitted when fees are collected.
+/// Emitted when a swap quote is generated.
 #[event]
-pub struct FeesCollected {
+pub struct SwapQuote {
     pub pool: Pubkey,
-    pub protocol_fee: u64,
-    pub lp_fee: u64,
-    pub timestamp: i64,
+    pub amount_in: u64,
+    pub amount_out: u64,
+    pub fee: u64,
+    pub price_impact_bps: u64,
+}
+
+/// Emitted when fees are withdrawn.
+#[event]
+pub struct FeesWithdrawn {
+    pub pool: Pubkey,
+    pub amount_a: u64,
+    pub amount_b: u64,
 }

@@ -1,13 +1,12 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::hash::hash;
 
 // Module declarations
-pub mod services;
 pub mod events;
+pub mod services;
 
 // Re-export services for use in instructions
-use services::{ServiceRegistry, ProofData, ValidatedProof};
 use events::{ProofSubmitted, RewardDistributed};
+use services::{ProofData, ServiceRegistry};
 
 declare_id!("1PoToVa1idator11111111111111111111111111111");
 
@@ -33,7 +32,7 @@ pub mod tribewarez_pot_o {
         config.pool_type = params.pool_type;
         config.swap_program_id = params.swap_program_id;
         config.bump = ctx.bumps.config;
-        
+
         // Initialize tensor network fields (v0.2.0)
         config.tensor_enabled = 0; // Disabled by default, enable via update_pool_config
         config.s_max = 1_000_000; // 1e6 scale
@@ -44,7 +43,7 @@ pub mod tribewarez_pot_o {
         config.total_miners = 0;
         config.active_pools = 0;
         config.average_coherence = 0;
-        
+
         Ok(())
     }
 
@@ -63,7 +62,7 @@ pub mod tribewarez_pot_o {
         miner.last_proof_slot = 0;
         miner.pool_id = Pubkey::default();
         miner.bump = ctx.bumps.miner_account;
-        
+
         // Initialize tensor fields (v0.2.0)
         miner.vertex_id = 0; // Will be assigned by pool service
         miner.entropy_score = 0; // Will be calculated on first proof
@@ -137,7 +136,9 @@ pub mod tribewarez_pot_o {
                 services::ValidationError::ChallengeExpired => PotOError::ChallengeExpired,
                 services::ValidationError::MmlThresholdNotMet => PotOError::MmlThresholdNotMet,
                 services::ValidationError::PathDistanceTooLarge => PotOError::PathDistanceTooLarge,
-                services::ValidationError::InvalidComputationHash => PotOError::InvalidComputationHash,
+                services::ValidationError::InvalidComputationHash => {
+                    PotOError::InvalidComputationHash
+                }
                 _ => PotOError::InvalidComputationHash, // Other errors map to generic
             })?;
 
@@ -161,7 +162,7 @@ pub mod tribewarez_pot_o {
         proof_record.timestamp = clock.unix_timestamp;
         proof_record.reward_distributed = reward_allocation.total_reward;
         proof_record.bump = ctx.bumps.proof_record;
-        
+
         // New fields in v0.2.0
         proof_record.entropy_score = validated_proof.entropy_score;
         proof_record.is_tensor_aware = if registry.is_tensor_aware() { 1 } else { 0 };
@@ -173,7 +174,7 @@ pub mod tribewarez_pot_o {
         miner_account.pending_rewards += reward_allocation.total_reward;
         miner_account.last_proof_slot = clock.slot;
         miner_account.reputation_score += 1;
-        
+
         // Update tensor fields
         miner_account.entropy_score = validated_proof.entropy_score;
         if registry.is_tensor_aware() {
@@ -184,7 +185,9 @@ pub mod tribewarez_pot_o {
         let cfg = &mut ctx.accounts.config;
         cfg.total_proofs += 1;
         if registry.is_tensor_aware() {
-            cfg.network_entropy = cfg.network_entropy.saturating_add(validated_proof.entropy_score);
+            cfg.network_entropy = cfg
+                .network_entropy
+                .saturating_add(validated_proof.entropy_score);
         }
 
         // 6. Emit events
@@ -240,8 +243,8 @@ pub mod tribewarez_pot_o {
 
         // In production: CPI transfer of PTtC/NMTC tokens here.
         // For now, reward accounting is on-chain only.
-        
-        let clock = Clock::get()?;
+
+        let _clock = Clock::get()?;
         msg!("Rewards claimed: {} tokens", pending);
 
         Ok(())
@@ -282,8 +285,8 @@ pub mod tribewarez_pot_o {
         config.tensor_enabled = enable;
         if enable != 0 {
             config.s_max = s_max.max(1_000_000); // Minimum 1e6
-            config.bond_dimension = bond_dimension.max(2).min(8); // Between 2 and 8
-            config.max_pool_size = max_pool_size.max(2).min(512); // Between 2 and 512
+            config.bond_dimension = bond_dimension.clamp(2, 8); // Between 2 and 8
+            config.max_pool_size = max_pool_size.clamp(2, 512); // Between 2 and 512
             config.entropy_weight_factor = entropy_weight;
         }
         Ok(())
@@ -307,24 +310,8 @@ pub mod tribewarez_pot_o {
 // Helper
 // ---------------------------------------------------------------------------
 
-fn compute_proof_hash(
-    challenge_id: &[u8; 32],
-    tensor_result_hash: &[u8; 32],
-    mml_score: u64,
-    path_signature: &[u8; 32],
-    nonce: u64,
-) -> [u8; 32] {
-    let mut data = Vec::with_capacity(32 + 32 + 8 + 32 + 8);
-    data.extend_from_slice(challenge_id);
-    data.extend_from_slice(tensor_result_hash);
-    data.extend_from_slice(&mml_score.to_le_bytes());
-    data.extend_from_slice(path_signature);
-    data.extend_from_slice(&nonce.to_le_bytes());
-    hash(&data).to_bytes()
-}
-
 /// Compute initial coherence factor for a device type.
-/// 
+///
 /// Coherence preservation capabilities (1e6 scale):
 /// - Device 0 (CPU): 0.6 - moderate decoherence
 /// - Device 1 (GPU): 0.8 - good coherence
@@ -377,19 +364,19 @@ pub struct PotOConfig {
     pub pool_type: u8,
     pub swap_program_id: Pubkey,
     pub bump: u8,
-    
+
     // --- v0.2.0 Tensor Network Extensions ---
     // New fields added at end for ABI compatibility
-    pub tensor_enabled: u8,               // 0 = disabled, 1 = enabled
-    pub s_max: u64,                       // Maximum entropy (1e6 scale)
-    pub bond_dimension: u32,              // Quantum bond dimension
-    pub max_pool_size: u32,               // Maximum miners per pool
-    pub entropy_weight_factor: u64,       // Entropy weight in 1e6 scale
-    pub network_entropy: u64,             // Current network entropy
-    pub total_miners: u32,                // Number of active miners
-    pub active_pools: u32,                // Number of entanglement pools
-    pub average_coherence: u64,           // Average device coherence (1e6 scale)
-    
+    pub tensor_enabled: u8,         // 0 = disabled, 1 = enabled
+    pub s_max: u64,                 // Maximum entropy (1e6 scale)
+    pub bond_dimension: u32,        // Quantum bond dimension
+    pub max_pool_size: u32,         // Maximum miners per pool
+    pub entropy_weight_factor: u64, // Entropy weight in 1e6 scale
+    pub network_entropy: u64,       // Current network entropy
+    pub total_miners: u32,          // Number of active miners
+    pub active_pools: u32,          // Number of entanglement pools
+    pub average_coherence: u64,     // Average device coherence (1e6 scale)
+
     // Reserved for future expansion (256 bytes total)
     pub reserved: [u8; 200],
 }
@@ -405,17 +392,17 @@ pub struct MinerAccount {
     pub last_proof_slot: u64,
     pub pool_id: Pubkey,
     pub bump: u8,
-    
+
     // --- v0.2.0 Tensor Network Extensions ---
     // New fields added at end for ABI compatibility
-    pub vertex_id: u32,                   // Position in tensor network graph
-    pub entropy_score: u64,               // Miner's entropy contribution (1e6 scale)
-    pub coherence: u64,                   // Device coherence preservation (1e6 scale)
-    pub last_entropy_update: u64,         // Last slot when entropy was updated
-    pub entanglement_count: u32,          // Number of entangled connections
-    pub pool_generation: u64,             // Generation/epoch of current pool
-    pub unlock_probability: u64,          // P(unlock) calculated from entropy (1e6 scale)
-    
+    pub vertex_id: u32,           // Position in tensor network graph
+    pub entropy_score: u64,       // Miner's entropy contribution (1e6 scale)
+    pub coherence: u64,           // Device coherence preservation (1e6 scale)
+    pub last_entropy_update: u64, // Last slot when entropy was updated
+    pub entanglement_count: u32,  // Number of entangled connections
+    pub pool_generation: u64,     // Generation/epoch of current pool
+    pub unlock_probability: u64,  // P(unlock) calculated from entropy (1e6 scale)
+
     // Reserved for future expansion (256 bytes total)
     pub reserved: [u8; 192],
 }
@@ -430,19 +417,19 @@ pub struct ProofRecord {
     pub timestamp: i64,
     pub reward_distributed: u64,
     pub bump: u8,
-    
+
     // --- v0.2.0 Tensor Network Extensions ---
-    pub entropy_score: u64,               // Calculated entropy for this proof
-    pub is_tensor_aware: u8,              // 0 = standard, 1 = tensor-aware validation
-    pub path_distance: u32,               // Neural path distance
-    pub device_type: u8,                  // Device type that submitted proof
+    pub entropy_score: u64,  // Calculated entropy for this proof
+    pub is_tensor_aware: u8, // 0 = standard, 1 = tensor-aware validation
+    pub path_distance: u32,  // Neural path distance
+    pub device_type: u8,     // Device type that submitted proof
 }
 
 // ---------------------------------------------------------------------------
 // Contexts
 // ---------------------------------------------------------------------------
 
-    #[derive(Accounts)]
+#[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(
         init,

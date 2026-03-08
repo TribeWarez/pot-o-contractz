@@ -6,7 +6,7 @@ pub struct PoolVertex {
     pub id: u32,
     pub miner: Pubkey,
     pub device_type: u8,
-    pub entropy: u64, // S_A in 1e6 scale
+    pub entropy: u64,   // S_A in 1e6 scale
     pub coherence: u64, // Device coherence in 1e6 scale
 }
 
@@ -48,20 +48,12 @@ pub trait TensorPoolService {
 
     /// Calculate effective distance between two vertices.
     /// Formula: d_eff = 1 - I(A:B) / S_max
-    fn calculate_effective_distance(
-        &self,
-        mutual_info: u64,
-        s_max: u64,
-    ) -> u64;
+    fn calculate_effective_distance(&self, mutual_info: u64, s_max: u64) -> u64;
 
     /// Calculate coherence probability (unlock probability for staking).
     /// Formula: P(unlock) = tanh(S_A / S_max)
     /// Approximation: P ≈ 0.5 * tanh_approx(S_A / S_max)
-    fn calculate_coherence_probability(
-        &self,
-        entropy: u64,
-        s_max: u64,
-    ) -> u64;
+    fn calculate_coherence_probability(&self, entropy: u64, s_max: u64) -> u64;
 
     /// Get total network entropy (sum of all vertex entropies).
     fn total_entropy(&self) -> u64;
@@ -80,6 +72,7 @@ pub trait TensorPoolService {
 ///
 /// Maintains in-memory graph structure with vertices and edges.
 /// Suitable for computation within instruction context.
+#[allow(dead_code)]
 pub struct StandardTensorPool {
     vertices: Vec<PoolVertex>,
     edges: Vec<PoolEdge>,
@@ -107,7 +100,6 @@ impl StandardTensorPool {
             return 0;
         }
 
-        let mut result = 0u64;
         let mut power = 1u32;
         let mut log_val = 0u64;
 
@@ -117,7 +109,7 @@ impl StandardTensorPool {
         }
 
         // Refine with binary search (simple approximation)
-        result = log_val;
+        let mut result = log_val;
 
         // Adjust for fractional part
         if power > x {
@@ -140,7 +132,7 @@ impl StandardTensorPool {
         if x >= 3 * ONE {
             return ONE; // tanh(3) ≈ 0.995, clamp to 1.0
         }
-        if x <= 0 {
+        if x == 0 {
             return 0;
         }
 
@@ -148,7 +140,8 @@ impl StandardTensorPool {
         let x_cubed = (x / ONE) * (x / ONE) * (x / ONE) / ONE;
         let x_fifth = x_cubed * (x / ONE) * (x / ONE) / ONE;
 
-        x.saturating_sub(x_cubed / 3).saturating_add(2 * x_fifth / 15)
+        x.saturating_sub(x_cubed / 3)
+            .saturating_add(2 * x_fifth / 15)
     }
 }
 
@@ -180,14 +173,12 @@ impl TensorPoolService for StandardTensorPool {
         entropy_union: u64,
     ) -> u64 {
         // I(A:B) = S(A) + S(B) - S(A∪B)
-        entropy_a.saturating_add(entropy_b).saturating_sub(entropy_union)
+        entropy_a
+            .saturating_add(entropy_b)
+            .saturating_sub(entropy_union)
     }
 
-    fn calculate_effective_distance(
-        &self,
-        mutual_info: u64,
-        s_max: u64,
-    ) -> u64 {
+    fn calculate_effective_distance(&self, mutual_info: u64, s_max: u64) -> u64 {
         // d_eff = 1 - I(A:B) / S_max
         if mutual_info >= s_max {
             return 0; // d_eff = 0 (perfect correlation)
@@ -195,11 +186,7 @@ impl TensorPoolService for StandardTensorPool {
         ((s_max - mutual_info) * 1_000_000) / s_max
     }
 
-    fn calculate_coherence_probability(
-        &self,
-        entropy: u64,
-        s_max: u64,
-    ) -> u64 {
+    fn calculate_coherence_probability(&self, entropy: u64, s_max: u64) -> u64 {
         // P(unlock) = tanh(S_A / S_max)
         // Scale: S_A / S_max is in [0, 1] in 1e6 scale
         let normalized = (entropy * 1_000_000) / s_max.max(1);
@@ -274,22 +261,16 @@ impl TensorPoolService for MockTensorPool {
         entropy_b: u64,
         entropy_union: u64,
     ) -> u64 {
-        entropy_a.saturating_add(entropy_b).saturating_sub(entropy_union)
+        entropy_a
+            .saturating_add(entropy_b)
+            .saturating_sub(entropy_union)
     }
 
-    fn calculate_effective_distance(
-        &self,
-        _mutual_info: u64,
-        _s_max: u64,
-    ) -> u64 {
+    fn calculate_effective_distance(&self, _mutual_info: u64, _s_max: u64) -> u64 {
         500_000 // Mock: 0.5
     }
 
-    fn calculate_coherence_probability(
-        &self,
-        entropy: u64,
-        s_max: u64,
-    ) -> u64 {
+    fn calculate_coherence_probability(&self, entropy: u64, s_max: u64) -> u64 {
         (entropy * 1_000_000) / s_max.max(1)
     }
 

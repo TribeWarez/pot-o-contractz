@@ -2,19 +2,21 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 // Module declarations
-pub mod services;
 pub mod events;
+pub mod services;
 
 // Re-export services for use in instructions
-use services::VaultSecurityProvider;
-use events::{VaultCreated, Deposited, Withdrawn, VaultUnlocked};
+use events::{
+    Deposited, EscrowCancelled, EscrowCreated, EscrowReleased, LockExtended, TreasuryInitialized,
+    VaultCreated, Withdrawn,
+};
 
 declare_id!("HmWGA3JAF6basxGCvvGNHAdTBE3qCPhJCeFJAd7r5ra9");
 
 /// Tribewarez Vault Program
 /// Secure escrow and vault functionality for PTtC tokens.
 /// Supports deposits, withdrawals, time-locked vaults, and multi-sig operations.
-/// 
+///
 /// v0.2.0 includes tensor network support for dynamic locktime reduction
 /// based on entropy and coherence-aware access control.
 
@@ -621,69 +623,6 @@ pub struct Escrow {
     pub is_released: bool,
     pub is_cancelled: bool,
     pub bump: u8,
-}
-
-// ============ Events ============
-
-#[event]
-pub struct TreasuryInitialized {
-    pub treasury: Pubkey,
-    pub authority: Pubkey,
-    pub token_mint: Pubkey,
-}
-
-#[event]
-pub struct VaultCreated {
-    pub vault: Pubkey,
-    pub owner: Pubkey,
-    pub name: String,
-    pub lock_until: i64,
-}
-
-#[event]
-pub struct Deposited {
-    pub vault: Pubkey,
-    pub user: Pubkey,
-    pub amount: u64,
-    pub new_balance: u64,
-}
-
-#[event]
-pub struct Withdrawn {
-    pub vault: Pubkey,
-    pub user: Pubkey,
-    pub amount: u64,
-    pub new_balance: u64,
-}
-
-#[event]
-pub struct EscrowCreated {
-    pub escrow: Pubkey,
-    pub depositor: Pubkey,
-    pub beneficiary: Pubkey,
-    pub amount: u64,
-    pub release_time: i64,
-}
-
-#[event]
-pub struct EscrowReleased {
-    pub escrow: Pubkey,
-    pub beneficiary: Pubkey,
-    pub amount: u64,
-}
-
-#[event]
-pub struct EscrowCancelled {
-    pub escrow: Pubkey,
-    pub depositor: Pubkey,
-    pub amount: u64,
-}
-
-#[event]
-pub struct LockExtended {
-    pub vault: Pubkey,
-    pub owner: Pubkey,
-    pub new_lock_until: i64,
 }
 
 // ============ Errors ============

@@ -2,19 +2,18 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, Transfer};
 
 // Module declarations
-pub mod services;
 pub mod events;
+pub mod services;
 
 // Re-export services for use in instructions
-use services::{StakingCalculator, EntanglementService};
-use events::{Staked, Unstaked, RewardsClaimed, StakeEntangled};
+use events::{PoolInitialized, PoolUpdated, RewardsClaimed, Staked, Unstaked};
 
 declare_id!("Go2BZRhNLoaVni3QunrKPAXYdHtwZtTXuVspxpdAeDS8");
 
 /// Tribewarez Staking Program
 /// Allows users to stake PTtC tokens and earn rewards over time.
 /// Using native SPL token CPI calls for compatibility.
-/// 
+///
 /// v0.2.0 includes tensor network entanglement for cooperative staking
 /// with entropy-based unlock probabilities and efficiency bonuses.
 
@@ -472,14 +471,14 @@ pub struct StakingPool {
     pub bump: u8,
     pub is_active: bool,
     pub created_at: i64,
-    
+
     // --- v0.2.0 Tensor Network Extensions ---
-    pub tensor_enabled: u8,               // 0 = disabled, 1 = enabled
-    pub s_max: u64,                       // Maximum entropy (1e6 scale)
-    pub entropy_weight: u64,              // Entropy contribution weight (1e6 scale)
-    pub total_entangled_stakes: u32,      // Number of stakes in entangled pools
-    pub total_pool_entropy: u64,          // Sum of all stake entropies
-    pub average_coherence: u64,           // Average coherence of pool members
+    pub tensor_enabled: u8,          // 0 = disabled, 1 = enabled
+    pub s_max: u64,                  // Maximum entropy (1e6 scale)
+    pub entropy_weight: u64,         // Entropy contribution weight (1e6 scale)
+    pub total_entangled_stakes: u32, // Number of stakes in entangled pools
+    pub total_pool_entropy: u64,     // Sum of all stake entropies
+    pub average_coherence: u64,      // Average coherence of pool members
 }
 
 #[account]
@@ -493,58 +492,14 @@ pub struct StakeAccount {
     pub last_reward_time: i64,
     pub pending_rewards: u64,
     pub total_rewards_claimed: u64,
-    
+
     // --- v0.2.0 Tensor Network Extensions ---
-    pub entropy_score: u64,               // Stake's entropy contribution (1e6 scale)
-    pub coherence: u64,                   // Device coherence preservation (1e6 scale)
-    pub pool_id: u32,                     // Entanglement pool assignment (0 = not entangled)
-    pub last_entropy_update: i64,         // Last slot when entropy was calculated
-    pub unlock_probability: u64,          // P(early unlock) from entropy (1e6 scale)
-    pub coherence_bonus: u64,             // Bonus multiplier from coherence (1e6 scale)
-}
-
-// ============ Events ============
-
-#[event]
-pub struct PoolInitialized {
-    pub pool: Pubkey,
-    pub authority: Pubkey,
-    pub token_mint: Pubkey,
-    pub reward_rate: u64,
-    pub lock_duration: i64,
-}
-
-#[event]
-pub struct Staked {
-    pub user: Pubkey,
-    pub pool: Pubkey,
-    pub amount: u64,
-    pub total_staked: u64,
-    pub unlock_time: i64,
-}
-
-#[event]
-pub struct Unstaked {
-    pub user: Pubkey,
-    pub pool: Pubkey,
-    pub amount: u64,
-    pub remaining_stake: u64,
-}
-
-#[event]
-pub struct RewardsClaimed {
-    pub user: Pubkey,
-    pub pool: Pubkey,
-    pub amount: u64,
-    pub total_claimed: u64,
-}
-
-#[event]
-pub struct PoolUpdated {
-    pub pool: Pubkey,
-    pub reward_rate: u64,
-    pub lock_duration: i64,
-    pub is_active: bool,
+    pub entropy_score: u64,       // Stake's entropy contribution (1e6 scale)
+    pub coherence: u64,           // Device coherence preservation (1e6 scale)
+    pub pool_id: u32,             // Entanglement pool assignment (0 = not entangled)
+    pub last_entropy_update: i64, // Last slot when entropy was calculated
+    pub unlock_probability: u64,  // P(early unlock) from entropy (1e6 scale)
+    pub coherence_bonus: u64,     // Bonus multiplier from coherence (1e6 scale)
 }
 
 // ============ Errors ============

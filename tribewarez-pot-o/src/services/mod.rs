@@ -15,23 +15,16 @@ pub mod registry;
 
 // Re-export main types for convenience
 pub use proof_validator::{
-    ProofValidator, ProofData, ValidatedProof,
-    StandardProofValidator, TensorAwareProofValidator, ValidationError,
+    ProofData, ProofValidator, StandardProofValidator, TensorAwareProofValidator, ValidatedProof,
+    ValidationError,
 };
 
-pub use miner_manager::{
-    MinerManager, MinerInfo,
-    StandardMinerManager, TensorAwareMinerManager,
-};
+pub use miner_manager::{MinerInfo, MinerManager, StandardMinerManager, TensorAwareMinerManager};
 
 pub use reward_distributor::{
-    RewardDistributor, RewardAllocation,
-    SimpleRewardDistributor, TensorWeightedRewardDistributor,
+    RewardAllocation, RewardDistributor, SimpleRewardDistributor, TensorWeightedRewardDistributor,
 };
 
-pub use tensor_pool_service::{
-    TensorPoolService, PoolVertex, PoolEdge,
-    StandardTensorPool,
-};
+pub use tensor_pool_service::{PoolEdge, PoolVertex, StandardTensorPool, TensorPoolService};
 
 pub use registry::ServiceRegistry;

@@ -6,11 +6,10 @@ pub mod entanglement_service;
 
 // Re-export main types for convenience
 pub use staking_calculator::{
-    StakingCalculator, StakingError, StakingResult,
-    SimpleStakingCalculator, TensorAwareStakingCalculator,
+    SimpleStakingCalculator, StakingCalculator, StakingError, StakingResult,
+    TensorAwareStakingCalculator,
 };
 
 pub use entanglement_service::{
-    EntanglementService, PoolEntanglement,
-    SimpleEntanglementService, TensorEntanglementService,
+    EntanglementService, PoolEntanglement, SimpleEntanglementService, TensorEntanglementService,
 };

@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
+use std::result::Result as StdResult;
 
 /// Result type for swap operations.
-pub type SwapResult<T> = Result<T, SwapError>;
+pub type SwapResult<T> = StdResult<T, SwapError>;
 
 /// Swap-specific errors.
 #[derive(Debug, Clone, Copy)]
@@ -65,7 +65,7 @@ pub trait SwapCalculator {
 ///
 /// Standard constant product AMM with flat fees.
 pub struct SimpleSwapCalculator {
-    swap_fee_bps: u64,      // Basis points: 30 = 0.30%
+    swap_fee_bps: u64, // Basis points: 30 = 0.30%
     protocol_fee_bps: u64,
 }
 
@@ -105,14 +105,16 @@ impl SwapCalculator for SimpleSwapCalculator {
         let amount_in_after_fee = amount_in.saturating_sub(swap_fee);
 
         // x * y = k formula
-        let k = (reserve_in as u128).checked_mul(reserve_out as u128)
+        let k = (reserve_in as u128)
+            .checked_mul(reserve_out as u128)
             .ok_or(SwapError::MathOverflow)?;
 
         let new_reserve_in = (reserve_in as u128)
             .checked_add(amount_in_after_fee as u128)
             .ok_or(SwapError::MathOverflow)?;
 
-        let new_reserve_out = k.checked_div(new_reserve_in)
+        let new_reserve_out = k
+            .checked_div(new_reserve_in)
             .ok_or(SwapError::MathOverflow)? as u64;
 
         let amount_out = reserve_out.saturating_sub(new_reserve_out);
@@ -142,14 +144,16 @@ impl SwapCalculator for SimpleSwapCalculator {
             return Err(SwapError::InsufficientLiquidity);
         }
 
-        let k = (reserve_in as u128).checked_mul(reserve_out as u128)
+        let k = (reserve_in as u128)
+            .checked_mul(reserve_out as u128)
             .ok_or(SwapError::MathOverflow)?;
 
         let new_reserve_out = (reserve_out as u128)
             .checked_sub(amount_out as u128)
             .ok_or(SwapError::MathOverflow)?;
 
-        let new_reserve_in = k.checked_div(new_reserve_out)
+        let new_reserve_in = k
+            .checked_div(new_reserve_out)
             .ok_or(SwapError::MathOverflow)? as u64;
 
         let amount_in_before_fee = new_reserve_in.saturating_sub(reserve_in);
@@ -211,11 +215,7 @@ impl TensorSwapCalculator {
 
     /// Calculate dynamic fee based on pool coherence.
     /// Higher coherence = lower fees (better execution).
-    pub fn calculate_dynamic_swap_fee(
-        &self,
-        amount: u64,
-        pool_coherence: u64,
-    ) -> u64 {
+    pub fn calculate_dynamic_swap_fee(&self, amount: u64, pool_coherence: u64) -> u64 {
         // Coherence discount: 0 to 50% fee reduction at max coherence
         let coherence_ratio = (pool_coherence as f64) / (self.s_max as f64);
         let fee_discount = coherence_ratio * 0.5;
@@ -257,7 +257,8 @@ impl SwapCalculator for TensorSwapCalculator {
 
     fn calculate_lp_fees(&self, swap_amount: u64) -> u64 {
         let total_fee = (swap_amount as u128 * self.base_swap_fee_bps as u128 / 10000) as u64;
-        let protocol_fee = (swap_amount as u128 * self.base_protocol_fee_bps as u128 / 10000) as u64;
+        let protocol_fee =
+            (swap_amount as u128 * self.base_protocol_fee_bps as u128 / 10000) as u64;
         total_fee.saturating_sub(protocol_fee)
     }
 
