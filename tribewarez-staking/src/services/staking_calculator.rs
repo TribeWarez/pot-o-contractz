@@ -59,6 +59,10 @@ pub trait StakingCalculator {
 pub struct SimpleStakingCalculator;
 
 impl SimpleStakingCalculator {
+    /// Create a new simple staking calculator.
+    ///
+    /// This calculator uses basic time-weighted reward calculations without
+    /// tensor network enhancements. Suitable for v0.1.x compatibility.
     pub fn new() -> Self {
         SimpleStakingCalculator
     }
@@ -128,6 +132,11 @@ pub struct TensorAwareStakingCalculator {
 }
 
 impl TensorAwareStakingCalculator {
+    /// Create a new tensor-aware staking calculator (v0.2.0).
+    ///
+    /// # Arguments
+    /// * `s_max` - Maximum entropy target (1e6 scale) for reward calculations
+    /// * `entropy_weight` - Weight factor controlling how much entropy affects rewards
     pub fn new(s_max: u64, entropy_weight: f64) -> Self {
         TensorAwareStakingCalculator {
             s_max,

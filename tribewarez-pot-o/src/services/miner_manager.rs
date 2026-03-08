@@ -42,6 +42,9 @@ pub trait MinerManager {
 pub struct StandardMinerManager;
 
 impl StandardMinerManager {
+    /// Create a new standard miner manager.
+    ///
+    /// This manager uses simple reputation tracking without tensor network enhancements.
     pub fn new() -> Self {
         StandardMinerManager
     }
@@ -111,6 +114,14 @@ pub struct TensorAwareMinerManager {
 }
 
 impl TensorAwareMinerManager {
+    /// Create a new tensor-aware miner manager (v0.2.0).
+    ///
+    /// # Arguments
+    /// * `max_pool_size` - Maximum number of miners per entanglement pool
+    /// * `entropy_weight` - Weight factor controlling how much entropy affects reputation multiplier
+    ///
+    /// This manager incorporates tensor network enhancements including entropy-based reputation
+    /// adjustments and device coherence factors.
     pub fn new(max_pool_size: u32, entropy_weight: f64) -> Self {
         TensorAwareMinerManager {
             max_pool_size,

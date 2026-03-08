@@ -73,6 +73,10 @@ pub trait TensorPoolService {
 /// Maintains in-memory graph structure with vertices and edges.
 /// Suitable for computation within instruction context.
 #[allow(dead_code)]
+/// Standard tensor network pool implementation.
+///
+/// Manages vertices (miners) and edges (entanglement connections) to calculate
+/// network entropy, mutual information, and coherence probabilities.
 pub struct StandardTensorPool {
     vertices: Vec<PoolVertex>,
     edges: Vec<PoolEdge>,
@@ -81,6 +85,11 @@ pub struct StandardTensorPool {
 }
 
 impl StandardTensorPool {
+    /// Create a new tensor network pool.
+    ///
+    /// # Arguments
+    /// * `s_max` - Maximum entropy target (1e6 scale) for the pool
+    /// * `bond_dimension` - Quantum bond dimension for entropy calculations
     pub fn new(s_max: u64, bond_dimension: u32) -> Self {
         StandardTensorPool {
             vertices: Vec::new(),
