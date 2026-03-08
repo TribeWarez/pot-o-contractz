@@ -1,6 +1,6 @@
 [package]
 name = "tribewarez-vault"
-version = "0.1.0"
+version = "0.1.1-alpha"
 description = "PTtC Vault/Escrow Program for Tribewarez DeFi"
 edition = "2021"
 license = "MIT"

@@ -2435,14 +2435,14 @@ dependencies = [
 
 [[package]]
 name = "tribewarez-pot-o"
-version = "0.1.0"
+version = "0.1.1-alpha"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "tribewarez-staking"
-version = "0.1.0"
+version = "0.1.1-alpha"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -2450,7 +2450,7 @@ dependencies = [
 
 [[package]]
 name = "tribewarez-swap"
-version = "0.1.0"
+version = "0.1.1-alpha"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -2458,7 +2458,7 @@ dependencies = [
 
 [[package]]
 name = "tribewarez-vault"
-version = "0.1.0"
+version = "0.1.1-alpha"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
