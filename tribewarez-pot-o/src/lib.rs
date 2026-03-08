@@ -1,3 +1,38 @@
+//! # tribewarez-pot-o
+//!
+//! Proof of Tensor Optimizations (PoT-O) on-chain program for Solana.
+//!
+//! This crate implements the PoT-O blockchain validation system, which combines proof-of-work
+//! concepts with tensor network analysis to optimize mining rewards. It manages miner accounts,
+//! validates cryptographic proofs submitted by off-chain validators, and distributes rewards
+//! with optional tensor-aware enhancements.
+//!
+//! ## Core Features
+//!
+//! - **Proof Validation**: Validates mining proofs submitted by the off-chain PoT-O validator
+//! - **Miner Management**: Creates and maintains miner accounts with proof history tracking
+//! - **Reward Distribution**: Distributes mining rewards with support for tensor-weighted bonuses
+//! - **Difficulty Adjustment**: Automatically adjusts mining difficulty based on network conditions
+//! - **Tensor Network Support**: v0.2.0 feature for enhanced reward calculations using tensor metrics
+//!
+//! ## Key Instructions
+//!
+//! - `initialize`: Set up the PoT-O configuration (admin-only)
+//! - `register_miner`: Register a new miner account
+//! - `submit_proof`: Submit a mining proof for validation and reward distribution
+//! - `update_pool_config`: Update configuration parameters (admin-only)
+//! - `create_tensor_pool`: Create a tensor network pool for enhanced rewards (admin-only)
+//!
+//! ## Events
+//!
+//! This program emits events for proof submissions, reward distributions, and configuration changes.
+//! See the [`events`] module for detailed event documentation.
+//!
+//! ## Services
+//!
+//! The [`services`] module provides trait implementations for proof validation and reward distribution,
+//! supporting both legacy (v0.1.x) and tensor-aware (v0.2.0) configurations.
+
 use anchor_lang::prelude::*;
 
 // Module declarations
@@ -331,97 +366,173 @@ fn compute_device_coherence(device_type: u8) -> u64 {
 // Accounts
 // ---------------------------------------------------------------------------
 
+/// Parameters for initializing the PoT-O configuration.
+/// These values are set once during program initialization and can be updated via `update_pool_config`.
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct InitParams {
+    /// Base difficulty threshold for mining proofs
     pub difficulty: u64,
+    /// Minimum MML (Merkle Merkle Linkage) score required for valid proofs
     pub mml_threshold: u64,
+    /// Maximum neural path distance allowed in tensor network validation
     pub path_distance_max: u32,
+    /// Base reward amount distributed per validated proof
     pub reward_per_proof: u64,
+    /// Pool type (0 = legacy, 1 = tensor-aware v0.2.0)
     pub pool_type: u8,
+    /// Swap program ID for fee collection functionality
     pub swap_program_id: Pubkey,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
+/// Parameters for submitting and validating mining proofs.
+/// Contains cryptographic commitments and validation data for the proof.
 pub struct ProofParams {
+    /// Unique challenge identifier for this mining round
     pub challenge_id: [u8; 32],
+    /// Solana slot number when the challenge was issued
     pub challenge_slot: u64,
+    /// Hash of the tensor computation result
     pub tensor_result_hash: [u8; 32],
+    /// Merkle Merkle Linkage score derived from the proof
     pub mml_score: u64,
+    /// Signature proving path through the neural network
     pub path_signature: [u8; 32],
+    /// Distance traveled in the neural path (must be <= path_distance_max)
     pub path_distance: u32,
+    /// Nonce used in the computation
     pub computation_nonce: u64,
+    /// Hash of the complete computation (verified against submitted hash)
     pub computation_hash: [u8; 32],
 }
 
+
+/// Global PoT-O configuration account.
+/// Stores network-wide settings for proof validation, reward distribution, and tensor network parameters.
+/// This is a singleton account (one per program) created by the admin during initialization.
 #[account]
 pub struct PotOConfig {
+    /// Admin/authority account that can update configuration
     pub admin: Pubkey,
+    /// Base difficulty threshold for mining proofs
     pub difficulty: u64,
+    /// Minimum MML score required for valid proofs
     pub mml_threshold: u64,
+    /// Maximum neural path distance allowed
     pub path_distance_max: u32,
+    /// Base reward amount per validated proof
     pub reward_per_proof: u64,
+    /// Total number of proofs submitted since inception
     pub total_proofs: u64,
+    /// Pool type: 0 = legacy v0.1.x, 1 = tensor-aware v0.2.0
     pub pool_type: u8,
+    /// Program ID of the swap program for fee collection
     pub swap_program_id: Pubkey,
+    /// PDA bump seed for this account
     pub bump: u8,
 
     // --- v0.2.0 Tensor Network Extensions ---
     // New fields added at end for ABI compatibility
+    /// Whether tensor network enhancements are enabled
     pub tensor_enabled: u8,         // 0 = disabled, 1 = enabled
+    /// Maximum entropy (1e6 scale)
     pub s_max: u64,                 // Maximum entropy (1e6 scale)
+    /// Quantum bond dimension for tensor network calculations
     pub bond_dimension: u32,        // Quantum bond dimension
+    /// Maximum miners allowed per entanglement pool
     pub max_pool_size: u32,         // Maximum miners per pool
+    /// Weight factor for entropy in reward calculations (1e6 scale)
     pub entropy_weight_factor: u64, // Entropy weight in 1e6 scale
+    /// Current network-wide entropy measurement
     pub network_entropy: u64,       // Current network entropy
+    /// Total number of active miners in the network
     pub total_miners: u32,          // Number of active miners
+    /// Number of active entanglement pools
     pub active_pools: u32,          // Number of entanglement pools
+    /// Average coherence score across all devices (1e6 scale)
     pub average_coherence: u64,     // Average device coherence (1e6 scale)
 
     // Reserved for future expansion (256 bytes total)
+    /// Reserved space for future updates without breaking ABI compatibility
     pub reserved: [u8; 200],
 }
 
+
+/// Per-miner account storing mining history and statistics.
+/// Created when a miner first registers. Updated each time a proof is submitted.
 #[account]
 pub struct MinerAccount {
+    /// Public key of the miner who owns this account
     pub authority: Pubkey,
+    /// Type of hardware used by this miner
     pub device_type: u8,
+    /// Total number of valid proofs submitted by this miner
     pub total_proofs: u64,
+    /// Total rewards distributed to this miner
     pub total_rewards: u64,
+    /// Pending rewards awaiting claim
     pub pending_rewards: u64,
+    /// Reputation score based on submission quality (higher is better)
     pub reputation_score: u64,
+    /// Solana slot of the last valid proof submission
     pub last_proof_slot: u64,
+    /// ID of the tensor pool this miner is associated with (if any)
     pub pool_id: Pubkey,
+    /// PDA bump seed for this account
     pub bump: u8,
 
     // --- v0.2.0 Tensor Network Extensions ---
     // New fields added at end for ABI compatibility
+    /// Vertex position in the tensor network graph
     pub vertex_id: u32,           // Position in tensor network graph
+    /// Miner's contribution to network entropy (1e6 scale)
     pub entropy_score: u64,       // Miner's entropy contribution (1e6 scale)
+    /// Device's ability to preserve quantum coherence (1e6 scale, 0-1000000)
     pub coherence: u64,           // Device coherence preservation (1e6 scale)
+    /// Last slot when this miner's entropy metrics were updated
     pub last_entropy_update: u64, // Last slot when entropy was updated
+    /// Number of other miners this miner is entangled with
     pub entanglement_count: u32,  // Number of entangled connections
+    /// Current pool generation/epoch
     pub pool_generation: u64,     // Generation/epoch of current pool
+    /// Probability of unlock based on entropy (1e6 scale, 0-1000000)
     pub unlock_probability: u64,  // P(unlock) calculated from entropy (1e6 scale)
 
     // Reserved for future expansion (256 bytes total)
+    /// Reserved space for future updates without breaking ABI compatibility
     pub reserved: [u8; 192],
 }
 
+
+/// Proof record account storing details of a submitted mining proof.
+/// Created each time a miner submits a valid proof.
 #[account]
 pub struct ProofRecord {
+    /// Miner who submitted this proof
     pub miner: Pubkey,
+    /// Unique challenge ID for this proof
     pub challenge_id: [u8; 32],
+    /// Merkle Merkle Linkage score for this proof
     pub mml_score: u64,
+    /// Cryptographic signature proving path through neural network
     pub path_signature: [u8; 32],
+    /// Solana slot when the proof was submitted
     pub slot: u64,
+    /// Timestamp when the proof was submitted
     pub timestamp: i64,
+    /// Reward amount that was distributed for this proof
     pub reward_distributed: u64,
+    /// PDA bump seed for this account
     pub bump: u8,
 
     // --- v0.2.0 Tensor Network Extensions ---
+    /// Entropy score calculated from this proof (1e6 scale)
     pub entropy_score: u64,  // Calculated entropy for this proof
+    /// Whether this proof was validated using tensor-aware logic
     pub is_tensor_aware: u8, // 0 = standard, 1 = tensor-aware validation
+    /// Distance traveled in the neural path
     pub path_distance: u32,  // Neural path distance
+    /// Type of device that submitted this proof
     pub device_type: u8,     // Device type that submitted proof
 }
 

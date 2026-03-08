@@ -1,3 +1,38 @@
+//! # tribewarez-staking
+//!
+//! PTtC (Power-to-Trust-to-Collaborate) Staking Program for Tribewarez DeFi.
+//!
+//! This crate implements a staking program that allows users to stake PTtC tokens and earn rewards
+//! over time. It supports flexible staking strategies with v0.2.0 introducing tensor network entanglement
+//! for cooperative staking with entropy-based unlock probabilities and efficiency bonuses.
+//!
+//! ## Core Features
+//!
+//! - **Token Staking**: Secure staking of PTtC tokens with time-based rewards
+//! - **Reward Distribution**: Distribute rewards to stakers based on stake amount and duration
+//! - **Staking Pools**: Multiple pools with different reward rates and lock durations
+//! - **Tensor Entanglement**: v0.2.0 feature enabling cooperative staking with quantum-like entanglement
+//! - **Unlock Mechanics**: Entropy-based unlock probabilities for enhanced security
+//!
+//! ## Key Instructions
+//!
+//! - `initialize_pool`: Create a new staking pool with specific parameters
+//! - `stake`: Stake tokens into a pool
+//! - `unstake`: Withdraw staked tokens (subject to lock duration)
+//! - `claim_rewards`: Claim accumulated rewards
+//! - `entangle_stakes`: Link stakes in tensor network for cooperative rewards (v0.2.0)
+//!
+//! ## Events
+//!
+//! This program emits events for stake deposits, withdrawals, reward claims, and pool configuration changes.
+//! See the [`events`] module for detailed event documentation.
+//!
+//! ## Security Considerations
+//!
+//! - Staking locks are enforced via timestamp checks
+//! - Token transfers use SPL Token program via CPI for security
+//! - Admin-only operations are protected via Anchor's access control
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, Transfer};
 
@@ -456,49 +491,86 @@ pub struct UpdatePool<'info> {
 
 // ============ State Accounts ============
 
+/// A staking pool that holds staked tokens and distributes rewards.
+/// Each pool has its own configuration, token accounts, and reward parameters.
 #[account]
 #[derive(InitSpace)]
 pub struct StakingPool {
+    /// Authority/admin who can update pool configuration
     pub authority: Pubkey,
+    /// Mint of the token being staked in this pool
     pub token_mint: Pubkey,
+    /// Mint of the reward token (may be same as token_mint)
     pub reward_mint: Pubkey,
+    /// Pool's token account holding staked tokens
     pub pool_token_account: Pubkey,
+    /// Pool's token account holding rewards to distribute
     pub reward_token_account: Pubkey,
+    /// Reward amount per unit time (in lamports per slot)
     pub reward_rate: u64,
+    /// Minimum lock duration for stakes (in seconds)
     pub lock_duration: i64,
+    /// Total tokens currently staked in this pool
     pub total_staked: u64,
+    /// Cumulative rewards distributed from this pool
     pub total_rewards_distributed: u64,
+    /// PDA bump seed for this account
     pub bump: u8,
+    /// Whether this pool is accepting new stakes
     pub is_active: bool,
+    /// Timestamp when this pool was created
     pub created_at: i64,
 
     // --- v0.2.0 Tensor Network Extensions ---
+    /// Whether tensor network enhancements are enabled for this pool
     pub tensor_enabled: u8,          // 0 = disabled, 1 = enabled
+    /// Maximum entropy target for this pool (1e6 scale)
     pub s_max: u64,                  // Maximum entropy (1e6 scale)
+    /// Weight factor for entropy in reward calculations (1e6 scale)
     pub entropy_weight: u64,         // Entropy contribution weight (1e6 scale)
+    /// Number of stakes participating in entanglement
     pub total_entangled_stakes: u32, // Number of stakes in entangled pools
+    /// Sum of all stake entropy contributions
     pub total_pool_entropy: u64,     // Sum of all stake entropies
+    /// Average coherence preservation across all pool members
     pub average_coherence: u64,      // Average coherence of pool members
 }
 
+
+/// Individual stake account tracking one user's stake in a pool.
+/// Each staker has one account per pool they're participating in.
 #[account]
 #[derive(InitSpace)]
 pub struct StakeAccount {
+    /// User/owner of this stake
     pub owner: Pubkey,
+    /// Pool this stake belongs to
     pub pool: Pubkey,
+    /// Amount of tokens staked
     pub amount: u64,
+    /// Timestamp when the stake was created
     pub stake_time: i64,
+    /// Timestamp when the stake can be withdrawn (after lock_duration)
     pub unlock_time: i64,
+    /// Last timestamp when rewards were calculated
     pub last_reward_time: i64,
+    /// Rewards accumulated but not yet claimed
     pub pending_rewards: u64,
+    /// Total rewards claimed from this stake
     pub total_rewards_claimed: u64,
 
     // --- v0.2.0 Tensor Network Extensions ---
+    /// Stake's contribution to network entropy (1e6 scale)
     pub entropy_score: u64,       // Stake's entropy contribution (1e6 scale)
+    /// Device's ability to preserve quantum coherence (1e6 scale, 0-1000000)
     pub coherence: u64,           // Device coherence preservation (1e6 scale)
+    /// ID of the entanglement pool this stake belongs to (0 = not entangled)
     pub pool_id: u32,             // Entanglement pool assignment (0 = not entangled)
+    /// Last timestamp when entropy metrics were calculated
     pub last_entropy_update: i64, // Last slot when entropy was calculated
+    /// Probability of early unlock based on entropy (1e6 scale, 0-1000000)
     pub unlock_probability: u64,  // P(early unlock) from entropy (1e6 scale)
+    /// Bonus multiplier from coherence contribution (1e6 scale)
     pub coherence_bonus: u64,     // Bonus multiplier from coherence (1e6 scale)
 }
 

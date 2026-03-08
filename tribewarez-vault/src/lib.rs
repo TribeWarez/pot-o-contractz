@@ -1,3 +1,42 @@
+//! # tribewarez-vault
+//!
+//! PTtC Vault and Escrow Program for Tribewarez DeFi.
+//!
+//! This crate provides secure vault and escrow functionality for PTtC tokens on Solana.
+//! It enables time-locked vaults, conditional asset release, and treasury management with
+//! optional tensor network support for dynamic locktime reduction based on network conditions.
+//!
+//! ## Core Features
+//!
+//! - **Token Deposits**: Securely deposit and hold PTtC tokens in vaults
+//! - **Time-Locked Withdrawals**: Enforce minimum lock periods before withdrawal
+//! - **Escrow Services**: Create conditional escrow agreements with release conditions
+//! - **Treasury Management**: Centralized treasury for managing network assets
+//! - **Tensor-Aware Locks**: v0.2.0 feature for dynamic locktime reduction based on network activity
+//! - **Multi-Signature Support**: Allow multiple authorizers for critical operations
+//!
+//! ## Key Instructions
+//!
+//! - `initialize_treasury`: Set up the main treasury account (admin-only)
+//! - `create_vault`: Create a time-locked vault for token deposits
+//! - `deposit`: Deposit tokens into a vault
+//! - `withdraw`: Withdraw tokens after lock period expires
+//! - `create_escrow`: Create a conditional escrow agreement
+//! - `release_escrow`: Release escrowed assets when conditions are met
+//! - `extend_lock`: Extend the locktime of an existing vault
+//!
+//! ## Events
+//!
+//! This program emits events for vault creation, deposits, withdrawals, and escrow operations.
+//! See the [`events`] module for detailed event documentation.
+//!
+//! ## Security Model
+//!
+//! - Timestamps checked against Solana clock for temporal enforcement
+//! - SPL Token program used for all token transfers via CPI
+//! - Vault ownership validated before withdrawal
+//! - Escrow conditions verified before release
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
@@ -581,47 +620,81 @@ pub struct UpdateVault<'info> {
 
 // ============ State Accounts ============
 
+/// Central treasury account managing all vaults and escrows.
+/// This is a singleton account created by the program authority.
 #[account]
 #[derive(InitSpace)]
 pub struct Treasury {
+    /// Authority/admin who can manage the treasury
     pub authority: Pubkey,
+    /// Mint of the tokens managed by this treasury
     pub token_mint: Pubkey,
+    /// Treasury's token account holding all vault and escrow tokens
     pub vault_token_account: Pubkey,
+    /// Total amount of tokens deposited across all vaults
     pub total_deposited: u64,
+    /// Number of vaults created under this treasury
     pub total_vaults: u64,
+    /// PDA bump seed for this account
     pub bump: u8,
+    /// Whether this treasury is accepting new deposits
     pub is_active: bool,
+    /// Timestamp when this treasury was created
     pub created_at: i64,
 }
 
+/// Individual user vault with time-locked token storage.
+/// Created when a user wants to deposit and lock tokens for a period.
 #[account]
 #[derive(InitSpace)]
 pub struct UserVault {
+    /// Owner of this vault
     pub owner: Pubkey,
+    /// Treasury this vault belongs to
     pub treasury: Pubkey,
+    /// Human-readable name for this vault
     #[max_len(32)]
     pub name: String,
+    /// Current balance of tokens in this vault
     pub balance: u64,
+    /// Timestamp when tokens can be withdrawn
     pub lock_until: i64,
+    /// Timestamp when this vault was created
     pub created_at: i64,
+    /// Timestamp of the last deposit or withdrawal
     pub last_activity: i64,
+    /// Whether the lock period is still active
     pub is_locked: bool,
+    /// Cumulative tokens deposited into this vault
     pub total_deposited: u64,
+    /// Cumulative tokens withdrawn from this vault
     pub total_withdrawn: u64,
 }
 
+/// Escrow account for conditional token release.
+/// Holds tokens until release conditions are met.
 #[account]
 #[derive(InitSpace)]
 pub struct Escrow {
+    /// Account that deposited the tokens
     pub depositor: Pubkey,
+    /// Account that will receive the tokens
     pub beneficiary: Pubkey,
+    /// Mint of the escrowed tokens
     pub token_mint: Pubkey,
+    /// Token account holding the escrowed tokens
     pub escrow_token_account: Pubkey,
+    /// Amount of tokens held in escrow
     pub amount: u64,
+    /// Timestamp when tokens can be released
     pub release_time: i64,
+    /// Timestamp when this escrow was created
     pub created_at: i64,
+    /// Whether the escrow has been released
     pub is_released: bool,
+    /// Whether the escrow has been cancelled (refunded to depositor)
     pub is_cancelled: bool,
+    /// PDA bump seed for this account
     pub bump: u8,
 }
 

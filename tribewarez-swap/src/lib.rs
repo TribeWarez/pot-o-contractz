@@ -1,3 +1,48 @@
+//! # tribewarez-swap
+//!
+//! Automated Market Maker (AMM) Swap Program for Tribewarez DeFi.
+//!
+//! This crate implements a constant product AMM (x * y = k) for PTtC token swaps on Solana.
+//! It provides liquidity pools, enables decentralized trading, and collects protocol fees with
+//! optional tensor network support for dynamic fee discounts based on network coherence metrics.
+//!
+//! ## Core Features
+//!
+//! - **Liquidity Pools**: Create pools for trading pairs with constant product formula
+//! - **Token Swaps**: Execute swaps with automatic price discovery and slippage protection
+//! - **Liquidity Provision**: Add and remove liquidity with LP token minting/burning
+//! - **Fee Collection**: Automatic protocol fee collection and distribution
+//! - **Tensor-Aware Fees**: v0.2.0 feature for dynamic fee discounts based on network metrics
+//! - **Price Quotes**: Query swap quotes before executing trades
+//!
+//! ## Key Instructions
+//!
+//! - `initialize_pool`: Create a new liquidity pool for a trading pair
+//! - `add_liquidity`: Provide liquidity to a pool and receive LP tokens
+//! - `remove_liquidity`: Withdraw liquidity by burning LP tokens
+//! - `swap`: Execute a swap with specified slippage protection
+//! - `get_swap_quote`: Query the output amount for a given input
+//! - `withdraw_protocol_fees`: Withdraw accumulated protocol fees (admin-only)
+//!
+//! ## Events
+//!
+//! This program emits events for pool initialization, liquidity changes, swaps, and fee withdrawals.
+//! See the [`events`] module for detailed event documentation.
+//!
+//! ## AMM Formula
+//!
+//! The constant product formula ensures: `token_a_reserve * token_b_reserve = k`
+//!
+//! For a swap of `amount_in` of token A:
+//! - `amount_out = (amount_in * token_b_reserve) / (token_a_reserve + amount_in)`
+//! - Less protocol and LP fees
+//!
+//! ## Fee Structure
+//!
+//! - **Swap Fee**: 0.30% to liquidity providers
+//! - **Protocol Fee**: 0.05% retained by protocol
+//! - **Tensor Discount**: Applied to fees for network participants (v0.2.0)
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, Transfer};
 
@@ -862,24 +907,42 @@ pub struct WithdrawFees<'info> {
 
 // ============ State Accounts ============
 
+/// Constant product liquidity pool for token swaps.
+/// Maintains reserves of two token types and enables trading via x*y=k formula.
 #[account]
 #[derive(InitSpace)]
 pub struct LiquidityPool {
+    /// Authority/admin who can update pool configuration
     pub authority: Pubkey,
+    /// Mint of the first token in the pair
     pub token_a_mint: Pubkey,
+    /// Mint of the second token in the pair
     pub token_b_mint: Pubkey,
+    /// Token account holding reserves of token A
     pub token_a_vault: Pubkey,
+    /// Token account holding reserves of token B
     pub token_b_vault: Pubkey,
+    /// LP token mint for this pool
     pub lp_mint: Pubkey,
+    /// Current reserve amount of token A
     pub reserve_a: u64,
+    /// Current reserve amount of token B
     pub reserve_b: u64,
+    /// Total LP tokens outstanding (shares in the pool)
     pub total_lp_supply: u64,
+    /// Swap fee in basis points (100 = 1%)
     pub swap_fee_bps: u64,
+    /// Protocol fee in basis points
     pub protocol_fee_bps: u64,
+    /// Accumulated token A fees awaiting withdrawal
     pub collected_fees_a: u64,
+    /// Accumulated token B fees awaiting withdrawal
     pub collected_fees_b: u64,
+    /// PDA bump seed for this account
     pub bump: u8,
+    /// Whether this pool is accepting new swaps and liquidity changes
     pub is_active: bool,
+    /// Timestamp when this pool was created
     pub created_at: i64,
 }
 
