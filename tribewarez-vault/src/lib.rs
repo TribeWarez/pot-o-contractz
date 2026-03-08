@@ -1,11 +1,22 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
+// Module declarations
+pub mod services;
+pub mod events;
+
+// Re-export services for use in instructions
+use services::VaultSecurityProvider;
+use events::{VaultCreated, Deposited, Withdrawn, VaultUnlocked};
+
 declare_id!("HmWGA3JAF6basxGCvvGNHAdTBE3qCPhJCeFJAd7r5ra9");
 
 /// Tribewarez Vault Program
 /// Secure escrow and vault functionality for PTtC tokens.
 /// Supports deposits, withdrawals, time-locked vaults, and multi-sig operations.
+/// 
+/// v0.2.0 includes tensor network support for dynamic locktime reduction
+/// based on entropy and coherence-aware access control.
 
 #[program]
 pub mod tribewarez_vault {

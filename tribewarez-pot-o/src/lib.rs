@@ -1,6 +1,14 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::hash::hash;
 
+// Module declarations
+pub mod services;
+pub mod events;
+
+// Re-export services for use in instructions
+use services::{ServiceRegistry, ProofData, ValidatedProof};
+use events::{ProofSubmitted, RewardDistributed};
+
 declare_id!("1PoToVa1idator11111111111111111111111111111");
 
 /// PoT-O: Proof of Tensor Optimizations on-chain program.
@@ -11,6 +19,9 @@ pub mod tribewarez_pot_o {
     use super::*;
 
     /// Initialize the PoT-O config. Called once by the admin.
+    ///
+    /// Sets up both v0.1.x and v0.2.0 configuration. Tensor network features
+    /// are disabled by default but can be enabled via update_pool_config.
     pub fn initialize(ctx: Context<Initialize>, params: InitParams) -> Result<()> {
         let config = &mut ctx.accounts.config;
         config.admin = ctx.accounts.admin.key();
@@ -22,10 +33,25 @@ pub mod tribewarez_pot_o {
         config.pool_type = params.pool_type;
         config.swap_program_id = params.swap_program_id;
         config.bump = ctx.bumps.config;
+        
+        // Initialize tensor network fields (v0.2.0)
+        config.tensor_enabled = 0; // Disabled by default, enable via update_pool_config
+        config.s_max = 1_000_000; // 1e6 scale
+        config.bond_dimension = 2; // Default: 2 bonds per vertex
+        config.max_pool_size = 128; // Max 128 miners per entanglement pool
+        config.entropy_weight_factor = 500_000; // 0.5x entropy weight
+        config.network_entropy = 0;
+        config.total_miners = 0;
+        config.active_pools = 0;
+        config.average_coherence = 0;
+        
         Ok(())
     }
 
     /// Register a new miner.
+    ///
+    /// Initializes miner account with device type and computes initial coherence
+    /// based on device type if tensor network is enabled.
     pub fn register_miner(ctx: Context<RegisterMiner>, device_type: u8) -> Result<()> {
         let miner = &mut ctx.accounts.miner_account;
         miner.authority = ctx.accounts.authority.key();
@@ -37,46 +63,95 @@ pub mod tribewarez_pot_o {
         miner.last_proof_slot = 0;
         miner.pool_id = Pubkey::default();
         miner.bump = ctx.bumps.miner_account;
+        
+        // Initialize tensor fields (v0.2.0)
+        miner.vertex_id = 0; // Will be assigned by pool service
+        miner.entropy_score = 0; // Will be calculated on first proof
+        miner.coherence = compute_device_coherence(device_type);
+        miner.last_entropy_update = 0;
+        miner.entanglement_count = 0;
+        miner.pool_generation = 0;
+        miner.unlock_probability = 0; // Will be calculated from entropy
+
+        // Emit event
+        let clock = Clock::get()?;
+        emit!(events::MinerRegistered {
+            authority: ctx.accounts.authority.key(),
+            device_type,
+            timestamp: clock.unix_timestamp,
+        });
+
         Ok(())
     }
 
-    /// Submit a PoT-O proof. Validates on-chain and distributes rewards.
+    /// Submit a PoT-O proof. Validates on-chain using ServiceRegistry and distributes rewards.
+    ///
+    /// This instruction delegates validation and reward calculation to the service layer,
+    /// enabling both legacy (v0.1.x) and tensor-aware (v0.2.0) modes based on config.
+    ///
+    /// Flow:
+    /// 1. Instantiate ServiceRegistry based on config.tensor_enabled
+    /// 2. Use ProofValidator to validate proof (standard or tensor-aware)
+    /// 3. Use RewardDistributor to calculate rewards with bonuses
+    /// 4. Update miner stats and emit events
     pub fn submit_proof(ctx: Context<SubmitProof>, params: ProofParams) -> Result<()> {
         let config = &ctx.accounts.config;
         let clock = Clock::get()?;
 
-        // 1. Verify challenge is recent (within 256 slots)
-        require!(
-            clock.slot.saturating_sub(params.challenge_slot) <= 256,
-            PotOError::ChallengeExpired
+        // Instantiate appropriate ServiceRegistry based on config
+        let registry = if config.tensor_enabled != 0 {
+            // Tensor-aware mode (v0.2.0)
+            ServiceRegistry::new_tensor_aware(
+                config.s_max,
+                config.bond_dimension,
+                (config.entropy_weight_factor as f64) / 1_000_000.0,
+                config.max_pool_size,
+            )
+        } else {
+            // Legacy mode (v0.1.x)
+            ServiceRegistry::new_legacy()
+        };
+
+        // Prepare proof data for validation
+        let proof_data = ProofData {
+            challenge_id: params.challenge_id,
+            challenge_slot: params.challenge_slot,
+            tensor_result_hash: params.tensor_result_hash,
+            mml_score: params.mml_score,
+            path_signature: params.path_signature,
+            path_distance: params.path_distance,
+            computation_nonce: params.computation_nonce,
+            computation_hash: params.computation_hash,
+        };
+
+        // 1. Validate proof using service
+        let validator = registry.proof_validator();
+        let validated_proof = validator
+            .validate(
+                &proof_data,
+                clock.slot,
+                config.mml_threshold,
+                config.path_distance_max,
+            )
+            .map_err(|e| match e {
+                services::ValidationError::ChallengeExpired => PotOError::ChallengeExpired,
+                services::ValidationError::MmlThresholdNotMet => PotOError::MmlThresholdNotMet,
+                services::ValidationError::PathDistanceTooLarge => PotOError::PathDistanceTooLarge,
+                services::ValidationError::InvalidComputationHash => PotOError::InvalidComputationHash,
+                _ => PotOError::InvalidComputationHash, // Other errors map to generic
+            })?;
+
+        // 2. Calculate reward using service
+        let miner_account = &mut ctx.accounts.miner_account;
+        let distributor = registry.reward_distributor();
+        let reward_allocation = distributor.calculate_reward(
+            config.reward_per_proof,
+            miner_account.reputation_score,
+            miner_account.pool_id,
+            miner_account.device_type,
         );
 
-        // 2. Verify MML score meets threshold
-        require!(
-            params.mml_score <= config.mml_threshold,
-            PotOError::MmlThresholdNotMet
-        );
-
-        // 3. Verify path distance
-        require!(
-            params.path_distance <= config.path_distance_max,
-            PotOError::PathDistanceTooLarge
-        );
-
-        // 4. Verify computation hash integrity
-        let expected_hash = compute_proof_hash(
-            &params.challenge_id,
-            &params.tensor_result_hash,
-            params.mml_score,
-            &params.path_signature,
-            params.computation_nonce,
-        );
-        require!(
-            expected_hash == params.computation_hash,
-            PotOError::InvalidComputationHash
-        );
-
-        // 5. Record proof
+        // 3. Record proof with tensor data
         let proof_record = &mut ctx.accounts.proof_record;
         proof_record.miner = ctx.accounts.miner.key();
         proof_record.challenge_id = params.challenge_id;
@@ -84,24 +159,60 @@ pub mod tribewarez_pot_o {
         proof_record.path_signature = params.path_signature;
         proof_record.slot = clock.slot;
         proof_record.timestamp = clock.unix_timestamp;
-        proof_record.reward_distributed = config.reward_per_proof;
+        proof_record.reward_distributed = reward_allocation.total_reward;
         proof_record.bump = ctx.bumps.proof_record;
+        
+        // New fields in v0.2.0
+        proof_record.entropy_score = validated_proof.entropy_score;
+        proof_record.is_tensor_aware = if registry.is_tensor_aware() { 1 } else { 0 };
+        proof_record.path_distance = params.path_distance;
+        proof_record.device_type = miner_account.device_type;
 
-        // 6. Update miner stats
-        let miner = &mut ctx.accounts.miner_account;
-        miner.total_proofs += 1;
-        miner.pending_rewards += config.reward_per_proof;
-        miner.last_proof_slot = clock.slot;
-        miner.reputation_score += 1;
+        // 4. Update miner stats
+        miner_account.total_proofs += 1;
+        miner_account.pending_rewards += reward_allocation.total_reward;
+        miner_account.last_proof_slot = clock.slot;
+        miner_account.reputation_score += 1;
+        
+        // Update tensor fields
+        miner_account.entropy_score = validated_proof.entropy_score;
+        if registry.is_tensor_aware() {
+            miner_account.last_entropy_update = clock.slot;
+        }
 
-        // 7. Update global stats
+        // 5. Update global stats
         let cfg = &mut ctx.accounts.config;
         cfg.total_proofs += 1;
+        if registry.is_tensor_aware() {
+            cfg.network_entropy = cfg.network_entropy.saturating_add(validated_proof.entropy_score);
+        }
+
+        // 6. Emit events
+        emit!(ProofSubmitted {
+            miner: ctx.accounts.miner.key(),
+            challenge_id: params.challenge_id,
+            mml_score: params.mml_score,
+            slot: clock.slot,
+            timestamp: clock.unix_timestamp,
+            entropy_score: validated_proof.entropy_score,
+            is_tensor_aware: registry.is_tensor_aware(),
+        });
+
+        emit!(RewardDistributed {
+            miner: ctx.accounts.miner.key(),
+            base_reward: reward_allocation.base_reward,
+            bonus_reward: reward_allocation.bonus_reward,
+            total_reward: reward_allocation.total_reward,
+            multiplier: (reward_allocation.multiplier * 1_000_000.0) as u64, // Convert f64 to u64
+            timestamp: clock.unix_timestamp,
+        });
 
         Ok(())
     }
 
     /// Adjust difficulty (admin or time-gated crank).
+    ///
+    /// Can also adjust entropy weight factor and other tensor parameters.
     pub fn adjust_difficulty(
         ctx: Context<AdjustDifficulty>,
         new_difficulty: u64,
@@ -116,6 +227,9 @@ pub mod tribewarez_pot_o {
     }
 
     /// Claim accumulated rewards.
+    ///
+    /// Transfers accumulated pending rewards to the miner's authority.
+    /// In production, this would include CPI to SPL token program.
     pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         let miner = &mut ctx.accounts.miner_account;
         let pending = miner.pending_rewards;
@@ -126,11 +240,16 @@ pub mod tribewarez_pot_o {
 
         // In production: CPI transfer of PTtC/NMTC tokens here.
         // For now, reward accounting is on-chain only.
+        
+        let clock = Clock::get()?;
+        msg!("Rewards claimed: {} tokens", pending);
 
         Ok(())
     }
 
     /// Update pool configuration (admin only).
+    ///
+    /// Can enable/disable tensor network features and configure pool parameters.
     pub fn update_pool_config(
         ctx: Context<UpdatePoolConfig>,
         pool_type: u8,
@@ -139,6 +258,34 @@ pub mod tribewarez_pot_o {
         let config = &mut ctx.accounts.config;
         config.pool_type = pool_type;
         config.swap_program_id = swap_program_id;
+        Ok(())
+    }
+
+    /// Enable or update tensor network configuration (admin only).
+    ///
+    /// Called to enable tensor network features and set entropy parameters.
+    /// Parameters:
+    /// - enable: 1 to enable, 0 to disable tensor network
+    /// - s_max: Maximum entropy (1e6 scale)
+    /// - bond_dimension: Quantum bond dimension (typically 2-4)
+    /// - max_pool_size: Maximum miners per entanglement pool
+    /// - entropy_weight: Entropy weight factor (in 1e6 scale)
+    pub fn configure_tensor_network(
+        ctx: Context<UpdatePoolConfig>,
+        enable: u8,
+        s_max: u64,
+        bond_dimension: u32,
+        max_pool_size: u32,
+        entropy_weight: u64,
+    ) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        config.tensor_enabled = enable;
+        if enable != 0 {
+            config.s_max = s_max.max(1_000_000); // Minimum 1e6
+            config.bond_dimension = bond_dimension.max(2).min(8); // Between 2 and 8
+            config.max_pool_size = max_pool_size.max(2).min(512); // Between 2 and 512
+            config.entropy_weight_factor = entropy_weight;
+        }
         Ok(())
     }
 
@@ -174,6 +321,23 @@ fn compute_proof_hash(
     data.extend_from_slice(path_signature);
     data.extend_from_slice(&nonce.to_le_bytes());
     hash(&data).to_bytes()
+}
+
+/// Compute initial coherence factor for a device type.
+/// 
+/// Coherence preservation capabilities (1e6 scale):
+/// - Device 0 (CPU): 0.6 - moderate decoherence
+/// - Device 1 (GPU): 0.8 - good coherence
+/// - Device 2 (ASIC): 1.0 - excellent coherence (baseline)
+/// - Device 3 (Mobile): 0.4 - significant decoherence
+fn compute_device_coherence(device_type: u8) -> u64 {
+    match device_type {
+        0 => 600_000,   // CPU: 0.6x
+        1 => 800_000,   // GPU: 0.8x
+        2 => 1_000_000, // ASIC: 1.0x (baseline)
+        3 => 400_000,   // Mobile: 0.4x
+        _ => 500_000,   // Unknown: 0.5x (conservative)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -213,6 +377,21 @@ pub struct PotOConfig {
     pub pool_type: u8,
     pub swap_program_id: Pubkey,
     pub bump: u8,
+    
+    // --- v0.2.0 Tensor Network Extensions ---
+    // New fields added at end for ABI compatibility
+    pub tensor_enabled: u8,               // 0 = disabled, 1 = enabled
+    pub s_max: u64,                       // Maximum entropy (1e6 scale)
+    pub bond_dimension: u32,              // Quantum bond dimension
+    pub max_pool_size: u32,               // Maximum miners per pool
+    pub entropy_weight_factor: u64,       // Entropy weight in 1e6 scale
+    pub network_entropy: u64,             // Current network entropy
+    pub total_miners: u32,                // Number of active miners
+    pub active_pools: u32,                // Number of entanglement pools
+    pub average_coherence: u64,           // Average device coherence (1e6 scale)
+    
+    // Reserved for future expansion (256 bytes total)
+    pub reserved: [u8; 200],
 }
 
 #[account]
@@ -226,6 +405,19 @@ pub struct MinerAccount {
     pub last_proof_slot: u64,
     pub pool_id: Pubkey,
     pub bump: u8,
+    
+    // --- v0.2.0 Tensor Network Extensions ---
+    // New fields added at end for ABI compatibility
+    pub vertex_id: u32,                   // Position in tensor network graph
+    pub entropy_score: u64,               // Miner's entropy contribution (1e6 scale)
+    pub coherence: u64,                   // Device coherence preservation (1e6 scale)
+    pub last_entropy_update: u64,         // Last slot when entropy was updated
+    pub entanglement_count: u32,          // Number of entangled connections
+    pub pool_generation: u64,             // Generation/epoch of current pool
+    pub unlock_probability: u64,          // P(unlock) calculated from entropy (1e6 scale)
+    
+    // Reserved for future expansion (256 bytes total)
+    pub reserved: [u8; 192],
 }
 
 #[account]
@@ -238,18 +430,24 @@ pub struct ProofRecord {
     pub timestamp: i64,
     pub reward_distributed: u64,
     pub bump: u8,
+    
+    // --- v0.2.0 Tensor Network Extensions ---
+    pub entropy_score: u64,               // Calculated entropy for this proof
+    pub is_tensor_aware: u8,              // 0 = standard, 1 = tensor-aware validation
+    pub path_distance: u32,               // Neural path distance
+    pub device_type: u8,                  // Device type that submitted proof
 }
 
 // ---------------------------------------------------------------------------
 // Contexts
 // ---------------------------------------------------------------------------
 
-#[derive(Accounts)]
+    #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + 32 + 8 + 8 + 4 + 8 + 8 + 1 + 32 + 1,
+        space = 8 + 32 + 8 + 8 + 4 + 8 + 8 + 1 + 32 + 1 + 1 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 8 + 200,
         seeds = [b"pot_o_config"],
         bump
     )]
@@ -264,7 +462,7 @@ pub struct RegisterMiner<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + 32 + 1 + 8 + 8 + 8 + 8 + 8 + 32 + 1,
+        space = 8 + 32 + 1 + 8 + 8 + 8 + 8 + 8 + 32 + 1 + 4 + 8 + 8 + 8 + 4 + 8 + 8 + 192,
         seeds = [b"miner", authority.key().as_ref()],
         bump
     )]
@@ -294,7 +492,7 @@ pub struct SubmitProof<'info> {
     #[account(
         init,
         payer = relayer,
-        space = 8 + 32 + 32 + 8 + 32 + 8 + 8 + 8 + 1,
+        space = 8 + 32 + 32 + 8 + 32 + 8 + 8 + 8 + 1 + 8 + 1 + 4 + 1,
         seeds = [b"proof", params.challenge_id.as_ref()],
         bump
     )]

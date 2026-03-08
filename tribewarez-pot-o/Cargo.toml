@@ -1,14 +1,14 @@
 [package]
 name = "tribewarez-pot-o"
-version = "0.1.1-alpha"
-description = "PoT-O (Proof of Tensor Optimizations) on-chain program"
+version = "0.2.0"
+description = "PoT-O (Proof of Tensor Optimizations) on-chain program with tensor network support"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/TribeWarez/tribe"
 homepage = "https://defi.tribewarez.com"
 documentation = "https://docs.rs/tribewarez-pot-o"
 readme = "README.md"
-keywords = ["solana", "anchor", "tribewarez", "pot-o", "defi", "blockchain"]
+keywords = ["solana", "anchor", "tribewarez", "pot-o", "defi", "blockchain", "tensor-network"]
 categories = ["cryptography::cryptocurrency"]
 
 [lib]
@@ -23,6 +23,7 @@ default = []
 
 [dependencies]
 anchor-lang = { workspace = true }
+pot-o-core = { path = "../../pot-o-validator/core", version = "0.2.0" }
 
 [lints]
 workspace = true

@@ -1,14 +1,14 @@
 [package]
 name = "tribewarez-staking"
-version = "0.1.1-alpha"
-description = "PTtC Staking Program for Tribewarez DeFi"
+version = "0.2.0"
+description = "PTtC Staking Program for Tribewarez DeFi with tensor network support"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/TribeWarez/tribe"
 homepage = "https://defi.tribewarez.com"
 documentation = "https://docs.rs/tribewarez-staking"
 readme = "README.md"
-keywords = ["solana", "anchor", "tribewarez", "staking", "defi", "pttc"]
+keywords = ["solana", "anchor", "tribewarez", "staking", "defi", "pttc", "tensor-network"]
 categories = ["cryptography::cryptocurrency"]
 
 [lib]
@@ -25,6 +25,7 @@ default = []
 [dependencies]
 anchor-lang = { workspace = true, features = ["init-if-needed"] }
 anchor-spl = { workspace = true }
+pot-o-core = { path = "../../pot-o-validator/core", version = "0.2.0" }
 
 [lints]
 workspace = true

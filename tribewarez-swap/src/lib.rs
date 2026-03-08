@@ -1,11 +1,18 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, Transfer};
 
+// Module declarations
+pub mod services;
+pub mod events;
+
 declare_id!("GPGGnKwnvKseSxzPukrNvch1CwYhifTqgj2RdW1P26H3");
 
-// Tribewarez Swap Program
-// Constant Product AMM (x * y = k) for PTtC token swaps.
-// Supports liquidity provision, swaps, and fee collection.
+/// Tribewarez Swap Program
+/// Constant Product AMM (x * y = k) for PTtC token swaps.
+/// Supports liquidity provision, swaps, and fee collection.
+/// 
+/// v0.2.0 includes tensor network support for dynamic fee discounts
+/// based on coherence and quantum entanglement calculations.
 
 // Fee configuration (basis points - 10000 = 100%)
 const SWAP_FEE_BPS: u64 = 30; // 0.30% swap fee
