@@ -55,7 +55,7 @@ mod mock_vault_security {
 
         fn calculate_early_withdrawal_fee(
             &self,
-            withdrawal_amount: u64,
+            _withdrawal_amount: u64,
             lock_until: i64,
             current_time: i64,
         ) -> WithdrawalFeeInfo {
@@ -64,7 +64,7 @@ mod mock_vault_security {
 
             // Linear fee: max 50% if withdrawn immediately
             let max_fee_bps = 5000; // 50%
-            let total_lock_time = (lock_until - (lock_until - time_remaining)).max(1);
+            let total_lock_time = lock_until.max(1);
             let fee_percent = if is_early {
                 (max_fee_bps as i64 * time_remaining / total_lock_time).min(max_fee_bps as i64)
                     as u64
@@ -94,13 +94,13 @@ mod mock_vault_security {
             }
         }
 
-        fn calculate_entropy_reduction(&self, entropy: u64) -> i64 {
+        pub(super) fn calculate_entropy_reduction(&self, entropy: u64) -> i64 {
             // Reduce locktime by up to 100% based on entropy
             let normalized = (entropy as f64 / self.s_max as f64).min(1.0);
             (normalized * self.entropy_weight * 100.0) as i64
         }
 
-        fn calculate_coherence_discount(&self, entropy: u64) -> u64 {
+        pub(super) fn calculate_coherence_discount(&self, entropy: u64) -> u64 {
             // Reduce fee by up to 50% based on entropy
             let normalized = (entropy as f64 / self.s_max as f64).min(1.0);
             (normalized * 5000.0) as u64 // 5000 BPS = 50%
@@ -123,7 +123,7 @@ mod mock_vault_security {
 
         fn calculate_early_withdrawal_fee(
             &self,
-            withdrawal_amount: u64,
+            _withdrawal_amount: u64,
             lock_until: i64,
             current_time: i64,
         ) -> WithdrawalFeeInfo {
@@ -132,7 +132,7 @@ mod mock_vault_security {
 
             // Base fee (same as SimpleVaultSecurity)
             let max_fee_bps = 5000;
-            let total_lock_time = (lock_until - (lock_until - time_remaining)).max(1);
+            let total_lock_time = lock_until.max(1);
             let base_fee = if is_early {
                 (max_fee_bps as i64 * time_remaining / total_lock_time).min(max_fee_bps as i64)
                     as u64
