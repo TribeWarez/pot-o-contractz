@@ -7,11 +7,9 @@
 // 4. Coherence bonuses
 
 use solana_sdk::pubkey::Pubkey;
-use std::str::FromStr;
 
 mod mock_staking {
     use solana_sdk::pubkey::Pubkey;
-    use std::str::FromStr;
 
     #[derive(Clone, Copy)]
     pub struct StakingReward {

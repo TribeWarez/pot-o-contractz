@@ -2513,6 +2513,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "pot-o-core",
+ "solana-sdk",
 ]
 
 [[package]]
