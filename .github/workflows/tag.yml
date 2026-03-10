@@ -33,6 +33,6 @@ jobs:
           fi
       - name: Trigger release workflow
         if: steps.create-tag.outputs.created == 'true'
-        run: gh workflow run release.yml --ref "${{ steps.create-tag.outputs.version }}"
+        run: gh workflow run release.yml --ref "${{ steps.create-tag.outputs.version }}" -f tag="${{ steps.create-tag.outputs.version }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
