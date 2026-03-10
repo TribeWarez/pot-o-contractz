@@ -81,7 +81,11 @@ mod mock_swap_calculator {
             reserve_out: u64,
         ) -> SwapQuote {
             if reserve_in == 0 {
-                return SwapQuote { amount_out: 0, fee: 0, price_impact_bps: 10000 };
+                return SwapQuote {
+                    amount_out: 0,
+                    fee: 0,
+                    price_impact_bps: 10000,
+                };
             }
 
             let output = self.calculate_swap_output_internal(
@@ -91,8 +95,7 @@ mod mock_swap_calculator {
                 self.swap_fee_bps,
             );
 
-            let fee =
-                ((amount_in as u128 * self.swap_fee_bps as u128 + 9999) / 10000) as u64;
+            let fee = ((amount_in as u128 * self.swap_fee_bps as u128 + 9999) / 10000) as u64;
             let price_impact = self.calculate_price_impact(amount_in, reserve_in);
 
             SwapQuote {
@@ -181,7 +184,11 @@ mod mock_swap_calculator {
             reserve_out: u64,
         ) -> SwapQuote {
             if reserve_in == 0 {
-                return SwapQuote { amount_out: 0, fee: 0, price_impact_bps: 10000 };
+                return SwapQuote {
+                    amount_out: 0,
+                    fee: 0,
+                    price_impact_bps: 10000,
+                };
             }
 
             let output = self.calculate_swap_output_internal(
