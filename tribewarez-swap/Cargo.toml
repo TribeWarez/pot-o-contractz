@@ -9,7 +9,7 @@ homepage = "https://defi.tribewarez.com"
 documentation = "https://docs.rs/tribewarez-swap"
 readme = "README.md"
 keywords = ["solana", "anchor", "tribewarez", "swap", "amm", "defi", "pttc", "tensor-network"]
-categories = ["cryptography::cryptocurrency"]
+categories = ["cryptography::cryptocurrencies"]
 
 [lib]
 crate-type = ["cdylib", "lib"]
