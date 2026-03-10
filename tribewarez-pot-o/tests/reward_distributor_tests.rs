@@ -7,12 +7,10 @@
 // 4. Pool reward distribution
 
 use solana_sdk::pubkey::Pubkey;
-use std::str::FromStr;
 
 // Mock implementations for testing (without Anchor dependencies)
 mod mock_rewards {
     use solana_sdk::pubkey::Pubkey;
-    use std::str::FromStr;
 
     #[derive(Clone, Copy)]
     pub struct RewardAllocation {
@@ -84,14 +82,23 @@ mod mock_rewards {
                 return vec![];
             }
 
-            miner_shares
+            let mut distribution: Vec<(Pubkey, u64)> = miner_shares
                 .iter()
                 .map(|(miner, weight)| {
                     let miner_reward =
                         (total_reward as u128 * *weight as u128 / total_weight as u128) as u64;
                     (*miner, miner_reward)
                 })
-                .collect()
+                .collect();
+
+            let distributed: u64 = distribution.iter().map(|(_, r)| *r).sum();
+            if distributed < total_reward {
+                if let Some((_, last_reward)) = distribution.last_mut() {
+                    *last_reward += total_reward - distributed;
+                }
+            }
+
+            distribution
         }
     }
 
@@ -145,10 +152,10 @@ mod mock_rewards {
         ) -> RewardAllocation {
             let coherence_mult = self.get_coherence_multiplier(device_type);
             let reputation_mult = self.calculate_reputation_multiplier(miner_reputation);
-            let combined_mult = coherence_mult * reputation_mult;
+            let combined_mult = (coherence_mult * reputation_mult).max(0.0);
 
-            let bonus_reward = (base_reward as f64 * (combined_mult - 1.0)) as u64;
-            let total_reward = base_reward + bonus_reward;
+            let total_reward = (base_reward as f64 * combined_mult) as u64;
+            let bonus_reward = total_reward.saturating_sub(base_reward);
 
             RewardAllocation {
                 base_reward,
@@ -181,24 +188,37 @@ mod mock_rewards {
             let bonus_multiplier = 1.0 + (self.pool_bonus_percent as f64 / 100.0);
             let adjusted_reward = (total_reward as f64 * bonus_multiplier) as u64;
 
-            miner_shares
+            let mut distribution: Vec<(Pubkey, u64)> = miner_shares
                 .iter()
                 .map(|(miner, weight)| {
                     let miner_reward =
                         (adjusted_reward as u128 * *weight as u128 / total_weight as u128) as u64;
                     (*miner, miner_reward)
                 })
-                .collect()
+                .collect();
+
+            let distributed: u64 = distribution.iter().map(|(_, r)| *r).sum();
+            if distributed < adjusted_reward {
+                if let Some((_, last_reward)) = distribution.last_mut() {
+                    *last_reward += adjusted_reward - distributed;
+                }
+            }
+
+            distribution
         }
     }
 }
 
 use mock_rewards::*;
 
+fn dummy_pubkey(seed: u8) -> Pubkey {
+    Pubkey::new_from_array([seed; 32])
+}
+
 #[test]
 fn test_simple_reward_distributor_fixed_reward() {
     let distributor = SimpleRewardDistributor::new();
-    let pool = Pubkey::from_str("11111111111111111111111111111111").unwrap();
+    let pool = dummy_pubkey(1);
 
     let reward = distributor.calculate_reward(1000, 0, pool, 0);
 
@@ -211,7 +231,7 @@ fn test_simple_reward_distributor_fixed_reward() {
 #[test]
 fn test_simple_reward_distributor_ignores_reputation() {
     let distributor = SimpleRewardDistributor::new();
-    let pool = Pubkey::from_str("11111111111111111111111111111111").unwrap();
+    let pool = dummy_pubkey(1);
 
     let reward_low_rep = distributor.calculate_reward(1000, 0, pool, 0);
     let reward_high_rep = distributor.calculate_reward(1000, 5000, pool, 0);
@@ -223,7 +243,7 @@ fn test_simple_reward_distributor_ignores_reputation() {
 #[test]
 fn test_simple_reward_distributor_ignores_device_type() {
     let distributor = SimpleRewardDistributor::new();
-    let pool = Pubkey::from_str("11111111111111111111111111111111").unwrap();
+    let pool = dummy_pubkey(1);
 
     let reward_cpu = distributor.calculate_reward(1000, 0, pool, 0);
     let reward_asic = distributor.calculate_reward(1000, 0, pool, 2);
@@ -254,15 +274,15 @@ fn test_simple_reward_pool_distribution() {
     let distributor = SimpleRewardDistributor::new();
     let miners = vec![
         (
-            Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            dummy_pubkey(1),
             10u32,
         ),
         (
-            Pubkey::from_str("22222222222222222222222222222222").unwrap(),
+            dummy_pubkey(2),
             20u32,
         ),
         (
-            Pubkey::from_str("33333333333333333333333333333333").unwrap(),
+            dummy_pubkey(3),
             30u32,
         ),
     ];
@@ -285,7 +305,7 @@ fn test_simple_reward_pool_distribution() {
 #[test]
 fn test_tensor_reward_device_coherence_multiplier() {
     let distributor = TensorWeightedRewardDistributor::new(1_000_000, 0.5);
-    let pool = Pubkey::from_str("11111111111111111111111111111111").unwrap();
+    let pool = dummy_pubkey(1);
 
     // Device types: CPU=0, GPU=1, ASIC=2, Mobile=3
     let reward_cpu = distributor.calculate_reward(1000, 0, pool, 0);
@@ -304,7 +324,7 @@ fn test_tensor_reward_device_coherence_multiplier() {
 #[test]
 fn test_tensor_reward_reputation_scaling() {
     let distributor = TensorWeightedRewardDistributor::new(1_000_000, 0.5);
-    let pool = Pubkey::from_str("11111111111111111111111111111111").unwrap();
+    let pool = dummy_pubkey(1);
 
     // Low reputation
     let reward_low = distributor.calculate_reward(1000, 50, pool, 1);
@@ -358,11 +378,11 @@ fn test_tensor_pool_reward_distribution_with_bonus() {
     let distributor = TensorWeightedRewardDistributor::new(1_000_000, 0.5);
     let miners = vec![
         (
-            Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            dummy_pubkey(1),
             10u32,
         ),
         (
-            Pubkey::from_str("22222222222222222222222222222222").unwrap(),
+            dummy_pubkey(2),
             20u32,
         ),
     ];
@@ -405,11 +425,11 @@ fn test_zero_weight_pool_distribution() {
     let distributor = SimpleRewardDistributor::new();
     let miners = vec![
         (
-            Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            dummy_pubkey(1),
             0u32,
         ),
         (
-            Pubkey::from_str("22222222222222222222222222222222").unwrap(),
+            dummy_pubkey(2),
             0u32,
         ),
     ];
