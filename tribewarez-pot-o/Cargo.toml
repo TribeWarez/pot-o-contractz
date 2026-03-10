@@ -8,7 +8,7 @@ repository = "https://github.com/TribeWarez/tribe"
 homepage = "https://defi.tribewarez.com"
 documentation = "https://docs.rs/tribewarez-pot-o"
 readme = "README.md"
-keywords = ["solana", "anchor", "tribewarez", "pot-o", "defi", "blockchain", "tensor-network"]
+keywords = ["solana", "anchor", "tribewarez", "pot-o", "defi"]
 categories = ["cryptography::cryptocurrencies"]
 
 [lib]

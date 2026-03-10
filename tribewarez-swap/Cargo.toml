@@ -8,7 +8,7 @@ repository = "https://github.com/TribeWarez/tribe"
 homepage = "https://defi.tribewarez.com"
 documentation = "https://docs.rs/tribewarez-swap"
 readme = "README.md"
-keywords = ["solana", "anchor", "tribewarez", "swap", "amm", "defi", "pttc", "tensor-network"]
+keywords = ["solana", "anchor", "tribewarez", "swap", "defi"]
 categories = ["cryptography::cryptocurrencies"]
 
 [lib]
