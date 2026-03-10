@@ -92,13 +92,13 @@ mod mock_vault_security {
             }
         }
 
-        pub fn calculate_entropy_reduction(&self, entropy: u64) -> i64 {
+        pub(super) fn calculate_entropy_reduction(&self, entropy: u64) -> i64 {
             // Reduce locktime by up to 100% based on entropy
             let normalized = (entropy as f64 / self.s_max as f64).min(1.0);
             (normalized * self.entropy_weight * 100.0) as i64
         }
 
-        pub fn calculate_coherence_discount(&self, entropy: u64) -> u64 {
+        pub(super) fn calculate_coherence_discount(&self, entropy: u64) -> u64 {
             // Reduce fee by up to 50% based on entropy
             let normalized = (entropy as f64 / self.s_max as f64).min(1.0);
             (normalized * 5000.0) as u64 // 5000 BPS = 50%
