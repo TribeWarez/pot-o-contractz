@@ -8,7 +8,7 @@ repository = "https://github.com/TribeWarez/tribe"
 homepage = "https://defi.tribewarez.com"
 documentation = "https://docs.rs/tribewarez-vault"
 readme = "README.md"
-keywords = ["solana", "anchor", "tribewarez", "vault", "escrow", "defi", "pttc", "tensor-network"]
+keywords = ["solana", "anchor", "tribewarez", "vault", "escrow"]
 categories = ["cryptography::cryptocurrencies"]
 
 [lib]
