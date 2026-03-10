@@ -1,4 +1,4 @@
-# crates.io Publication Checklist - v0.2.0
+# crates.io Publication Checklist - v0.2.x
 
 ## Pre-Publication Requirements
 
@@ -10,7 +10,7 @@ All packages have required Cargo.toml metadata:
 |---------|---------|---------|------------|-------------|--------|
 | pot-o-core | 0.2.0 | MIT | ✓ | ✓ | N/A |
 | tribewarez-pot-o | 0.2.0 | MIT | ✓ | ✓ | ✓ |
-| tribewarez-staking | 0.2.0 | MIT | ✓ | ✓ | ✓ |
+| tribewarez-staking | 0.2.1 | MIT | ✓ | ✓ | ✓ |
 | tribewarez-vault | 0.2.0 | MIT | ✓ | ✓ | ✓ |
 | tribewarez-swap | 0.2.0 | MIT | ✓ | ✓ | ✓ |
 
@@ -35,7 +35,7 @@ git tag -l | grep "v0.2.0"
   v0.2.0
   pot-o-core-v0.2.0
   tribewarez-pot-o-v0.2.0
-  tribewarez-staking-v0.2.0
+  tribewarez-staking-v0.2.1
   tribewarez-vault-v0.2.0
   tribewarez-swap-v0.2.0
 ```
@@ -59,7 +59,7 @@ See `PHASE6_TESTING_SUMMARY.md` for complete test results.
 1. pot-o-core v0.2.0          (no dependencies)
    ↓
 2. tribewarez-pot-o v0.2.0    (depends on pot-o-core)
-3. tribewarez-staking v0.2.0  (depends on pot-o-core)
+3. tribewarez-staking v0.2.1  (depends on pot-o-core)
 4. tribewarez-vault v0.2.0    (depends on pot-o-core)
 5. tribewarez-swap v0.2.0     (depends on pot-o-core)
 ```
@@ -135,20 +135,25 @@ cargo search tribewarez-staking --limit 1
 cargo search tribewarez-vault --limit 1
 cargo search tribewarez-swap --limit 1
 
-# Each should show version 0.2.0
+# Expected versions:
+# - pot-o-core 0.2.0
+# - tribewarez-pot-o 0.2.0
+# - tribewarez-staking 0.2.1
+# - tribewarez-vault 0.2.0
+# - tribewarez-swap 0.2.0
 ```
 
 ### ✅ Test Installation from crates.io
 
 ```bash
 # Create test project
-cargo new test-pot-o-v0.2.0
-cd test-pot-o-v0.2.0
+cargo new test-pot-o-v0.2.x
+cd test-pot-o-v0.2.x
 
 # Add dependencies
 cargo add pot-o-core@0.2.0
 cargo add tribewarez-pot-o@0.2.0
-cargo add tribewarez-staking@0.2.0
+cargo add tribewarez-staking@0.2.1
 cargo add tribewarez-vault@0.2.0
 cargo add tribewarez-swap@0.2.0
 
@@ -168,7 +173,7 @@ Update external documentation to reference crates.io:
 [dependencies]
 pot-o-core = "0.2.0"
 tribewarez-pot-o = "0.2.0"
-tribewarez-staking = "0.2.0"
+tribewarez-staking = "0.2.1"
 tribewarez-vault = "0.2.0"
 tribewarez-swap = "0.2.0"
 ```
@@ -178,9 +183,9 @@ tribewarez-swap = "0.2.0"
 Update GitHub:
 
 1. **Create Release**: https://github.com/TribeWarez/pot-o-contractz/releases/new
-   - Tag: `v0.2.0`
-   - Title: "v0.2.0: Dependency Injection with Tensor Network"
-   - Description: Copy from CHANGELOG.md v0.2.0 section
+   - Tag: `tribewarez-staking-v0.2.1` (patch release for staking)
+   - Title: "tribewarez-staking v0.2.1: crates.io patch publish"
+   - Description: Copy from CHANGELOG.md v0.2.1 section
    - Attach: CHANGELOG.md, MIGRATION_GUIDE.md
 
 2. **Update README**:
@@ -264,7 +269,7 @@ Once published to crates.io, the version 0.2.0 cannot be modified. Any changes r
 ```
 T+0:   Publish pot-o-core v0.2.0
 T+2min: Publish tribewarez-pot-o v0.2.0
-T+3min: Publish tribewarez-staking v0.2.0
+T+3min: Publish tribewarez-staking v0.2.1
 T+4min: Publish tribewarez-vault v0.2.0
 T+5min: Publish tribewarez-swap v0.2.0
 T+15min: Create GitHub release

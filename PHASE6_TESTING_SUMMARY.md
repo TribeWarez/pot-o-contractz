@@ -253,7 +253,7 @@ cargo test --test backward_compatibility
    - Publish to crates.io:
      - pot-o-core v0.2.0
      - tribewarez-pot-o v0.2.0
-     - tribewarez-staking v0.2.0
+     - tribewarez-staking v0.2.1
      - tribewarez-vault v0.2.0
      - tribewarez-swap v0.2.0
 

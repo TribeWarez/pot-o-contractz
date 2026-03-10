@@ -1,8 +1,8 @@
-# Migration Guide: v0.1.x → v0.2.0
+# Migration Guide: v0.1.x → v0.2.x
 
 ## Overview
 
-This guide explains how to upgrade from pot-o-contractz v0.1.x to v0.2.0. **The good news**: Full ABI backward compatibility means **zero breaking changes** and **no account migration needed**.
+This guide explains how to upgrade from pot-o-contractz v0.1.x to v0.2.x. **The good news**: Full ABI backward compatibility means **zero breaking changes** and **no account migration needed**.
 
 ## Key Changes in v0.2.0
 
@@ -37,10 +37,10 @@ This guide explains how to upgrade from pot-o-contractz v0.1.x to v0.2.0. **The 
 Deploy v0.2.0 programs alongside existing v0.1.x programs initially:
 
 ```bash
-# 1a. Update your Cargo.toml to use v0.2.0
+# 1a. Update your Cargo.toml to use v0.2.x
 [dependencies]
 tribewarez-pot-o = "0.2.0"
-tribewarez-staking = "0.2.0"
+tribewarez-staking = "0.2.1"
 tribewarez-vault = "0.2.0"
 tribewarez-swap = "0.2.0"
 pot-o-core = "0.2.0"

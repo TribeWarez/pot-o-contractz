@@ -1,6 +1,6 @@
 [package]
 name = "tribewarez-staking"
-version = "0.2.0"
+version = "0.2.1"
 description = "PTtC Staking Program for Tribewarez DeFi with tensor network support"
 edition = "2021"
 license = "MIT"
