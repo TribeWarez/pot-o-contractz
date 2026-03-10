@@ -2,6 +2,12 @@
 
 All notable changes to pot-o-contractz are documented in this file.
 
+## [0.2.1] - 2026-03-10
+
+### Patch Release
+
+- Bump `tribewarez-staking` crate version to 0.2.1 for crates.io publication (no functional changes).
+
 ## [0.2.0] - 2026-03-08
 
 ### Major Features

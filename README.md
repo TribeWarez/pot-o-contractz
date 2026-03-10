@@ -7,7 +7,7 @@
 
 Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PTtC (Pumped TRIBE-Test Coin) operations.
 
-**v0.2.0**: Dependency Injection architecture with Tensor Network integration for quantum-inspired reward calculations.
+**v0.2.x**: Dependency Injection architecture with Tensor Network integration for quantum-inspired reward calculations.
 
 ## Programs Overview
 
@@ -44,11 +44,11 @@ Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PT
   - 0.30% swap fee (0.25% to LPs, 0.05% protocol)
   - Slippage protection
 
-## Architecture: v0.2.0 Dependency Injection Pattern
+## Architecture: v0.2.x Dependency Injection Pattern
 
 ### Service-Oriented Design
 
-All v0.2.0 programs use a **Dependency Injection (DI) architecture** with abstract service traits:
+All v0.2.x programs use a **Dependency Injection (DI) architecture** with abstract service traits:
 
 ```rust
 // Example: RewardDistributor trait (tribewarez-pot-o)
@@ -88,7 +88,7 @@ impl ServiceRegistry {
 
 ### Tensor Network Integration (REALMS Part IV)
 
-v0.2.0 introduces **quantum-inspired calculations** for enhanced reward mechanics:
+v0.2.x introduces **quantum-inspired calculations** for enhanced reward mechanics:
 
 #### Core Formulas (Fixed-point at 1e6 scale)
 
@@ -364,11 +364,11 @@ VITE_RPC_ENDPOINT_API_KEY=your-helius-api-key
 
 ## Publishing (crates.io)
 
-### v0.2.0 Release
+### v0.2.x Release
 
-All program crates are published to crates.io as v0.2.0:
+All program crates are published to crates.io as part of the v0.2 line:
 - `tribewarez-pot-o` v0.2.0
-- `tribewarez-staking` v0.2.0
+- `tribewarez-staking` v0.2.1
 - `tribewarez-vault` v0.2.0
 - `tribewarez-swap` v0.2.0
 - `pot-o-core` v0.2.0 (provides tensor types and calculations)
@@ -377,13 +377,13 @@ All program crates are published to crates.io as v0.2.0:
 ```toml
 [dependencies]
 tribewarez-pot-o = "0.2.0"
-tribewarez-staking = "0.2.0"
+tribewarez-staking = "0.2.1"
 tribewarez-vault = "0.2.0"
 tribewarez-swap = "0.2.0"
 pot-o-core = "0.2.0"
 ```
 
-See [CHANGELOG.md](CHANGELOG.md) for v0.2.0 features, testing results, and migration guide from v0.1.x.
+See [CHANGELOG.md](CHANGELOG.md) for v0.2.x features, testing results, and migration guide from v0.1.x.
 
 ## Support
 

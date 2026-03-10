@@ -1,4 +1,4 @@
-# PHASE 1: pot-o-contractz v0.2.0 Publication Verification Report
+# PHASE 1: pot-o-contractz v0.2.x Publication Verification Report
 
 **Date**: March 8, 2026  
 **Status**: ✅ PUBLICATION READY  
@@ -98,7 +98,7 @@ f9db531 - test: add comprehensive unit tests for all v0.2.0 services
 v0.2.0                      ✅ Main release tag
 pot-o-core-v0.2.0           ✅ Core library tag
 tribewarez-pot-o-v0.2.0     ✅ Program tag
-tribewarez-staking-v0.2.0   ✅ Program tag
+tribewarez-staking-v0.2.1   ✅ Program tag
 tribewarez-vault-v0.2.0     ✅ Program tag
 tribewarez-swap-v0.2.0      ✅ Program tag
 v0.1.1-alpha                ✅ Previous version reference
@@ -120,7 +120,7 @@ v0.1.1-alpha                ✅ Previous version reference
 |---------|------|---------|---------|------------|-------------|--------|
 | pot-o-core | pot-o-core | 0.2.0 | MIT | ✅ | ✅ | ✅ READY |
 | pot-o | tribewarez-pot-o | 0.2.0 | MIT | ✅ | ✅ | ✅ READY |
-| staking | tribewarez-staking | 0.2.0 | MIT | ✅ | ✅ | ✅ READY |
+| staking | tribewarez-staking | 0.2.1 | MIT | ✅ | ✅ | ✅ READY |
 | vault | tribewarez-vault | 0.2.0 | MIT | ✅ | ✅ | ✅ READY |
 | swap | tribewarez-swap | 0.2.0 | MIT | ✅ | ✅ | ✅ READY |
 
@@ -150,7 +150,7 @@ v0.1.1-alpha                ✅ Previous version reference
 ## PUBLICATION APPROVAL CHECKLIST
 
 ### Pre-Publication
-- [x] All Cargo.toml files verified at v0.2.0
+- [x] All Cargo.toml files verified at v0.2.x (staking 0.2.1)
 - [x] All metadata complete and accurate
 - [x] All documentation present and comprehensive
 - [x] All tests passing (120+ tests)
@@ -163,7 +163,7 @@ v0.1.1-alpha                ✅ Previous version reference
 ### Publication Order (Dependency Chain)
 1. **pot-o-core v0.2.0** → No dependencies (publish first)
 2. **tribewarez-pot-o v0.2.0** → Depends on pot-o-core
-3. **tribewarez-staking v0.2.0** → Depends on pot-o-core
+3. **tribewarez-staking v0.2.1** → Depends on pot-o-core
 4. **tribewarez-vault v0.2.0** → Depends on pot-o-core
 5. **tribewarez-swap v0.2.0** → Depends on pot-o-core
 
@@ -182,7 +182,7 @@ v0.1.1-alpha                ✅ Previous version reference
 **Timeline**:
 - T+0: Publish pot-o-core v0.2.0
 - T+2min: Publish tribewarez-pot-o v0.2.0
-- T+3min: Publish tribewarez-staking v0.2.0
+- T+3min: Publish tribewarez-staking v0.2.1
 - T+4min: Publish tribewarez-vault v0.2.0
 - T+5min: Publish tribewarez-swap v0.2.0
 - T+15min: Create GitHub release
