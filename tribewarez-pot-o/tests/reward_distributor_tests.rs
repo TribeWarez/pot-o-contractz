@@ -273,18 +273,9 @@ fn test_simple_reward_penalty() {
 fn test_simple_reward_pool_distribution() {
     let distributor = SimpleRewardDistributor::new();
     let miners = vec![
-        (
-            dummy_pubkey(1),
-            10u32,
-        ),
-        (
-            dummy_pubkey(2),
-            20u32,
-        ),
-        (
-            dummy_pubkey(3),
-            30u32,
-        ),
+        (dummy_pubkey(1), 10u32),
+        (dummy_pubkey(2), 20u32),
+        (dummy_pubkey(3), 30u32),
     ];
 
     let distribution = distributor.distribute_pool_reward(1000, &miners);
@@ -376,16 +367,7 @@ fn test_tensor_reputation_multiplier() {
 #[test]
 fn test_tensor_pool_reward_distribution_with_bonus() {
     let distributor = TensorWeightedRewardDistributor::new(1_000_000, 0.5);
-    let miners = vec![
-        (
-            dummy_pubkey(1),
-            10u32,
-        ),
-        (
-            dummy_pubkey(2),
-            20u32,
-        ),
-    ];
+    let miners = vec![(dummy_pubkey(1), 10u32), (dummy_pubkey(2), 20u32)];
 
     let distribution = distributor.distribute_pool_reward(1000, &miners);
 
@@ -423,16 +405,7 @@ fn test_empty_pool_distribution() {
 #[test]
 fn test_zero_weight_pool_distribution() {
     let distributor = SimpleRewardDistributor::new();
-    let miners = vec![
-        (
-            dummy_pubkey(1),
-            0u32,
-        ),
-        (
-            dummy_pubkey(2),
-            0u32,
-        ),
-    ];
+    let miners = vec![(dummy_pubkey(1), 0u32), (dummy_pubkey(2), 0u32)];
     let distribution = distributor.distribute_pool_reward(1000, &miners);
     assert_eq!(distribution.len(), 0);
 }

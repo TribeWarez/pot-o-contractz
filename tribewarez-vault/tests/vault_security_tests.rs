@@ -61,8 +61,6 @@ mod mock_vault_security {
         ) -> WithdrawalFeeInfo {
             let time_remaining = (lock_until - current_time).max(0);
             let is_early = current_time < lock_until;
-
-            // Linear fee: max 50% if withdrawn immediately
             let max_fee_bps = 5000; // 50%
             let total_lock_time = lock_until.max(1);
             let fee_percent = if is_early {
