@@ -4,6 +4,10 @@ on:
   push:
     tags: ["v*.*.*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release (e.g. v0.2.0)
+        required: true
 
 jobs:
   publish:
@@ -20,9 +24,28 @@ jobs:
       - run: cargo publish -p tribewarez-vault
       - run: cargo publish -p tribewarez-swap
       - run: cargo publish -p tribewarez-pot-o
+      - name: Determine release tag
+        id: release_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            echo "Release requires a tag. Provide the 'tag' input or trigger from a tag ref." >&2
+            exit 1
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "Resolved release tag is empty; aborting." >&2
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         if: success()
         with:
           generate_release_notes: true
+          tag_name: ${{ steps.release_tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
