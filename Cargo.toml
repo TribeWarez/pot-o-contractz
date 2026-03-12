@@ -4,6 +4,8 @@ members = [
     "tribewarez-vault",
     "tribewarez-swap",
     "tribewarez-pot-o",
+    "tribewarez-tokens",
+    "tribewarez-governance",
 ]
 resolver = "2"
 
