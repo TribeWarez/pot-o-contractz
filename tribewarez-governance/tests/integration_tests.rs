@@ -1,821 +1,587 @@
-//! Comprehensive integration tests for tribewarez-governance program
-//! Tests all governance operations: proposals, voting, execution, and treasury management
-
 #[cfg(test)]
 mod tests {
     use anchor_lang::prelude::*;
-    use tribewarez_governance::state::{Proposal, Treasury, Vote};
+    use tribewarez_governance::state::{Proposal, ProposalStatus, Treasury, Vote, VoteType};
 
-    // Test Constants
-    const PROPOSAL_ID: u64 = 1;
-    const VOTING_PERIOD: i64 = 7 * 24 * 60 * 60; // 7 days in seconds
-    const VOTING_THRESHOLD: u64 = 1000; // Minimum votes to pass
-    const TREASURY_INITIAL: u64 = 10_000_000_000; // 10B tokens
+    fn create_proposal() -> Proposal {
+        Proposal {
+            proposer: Pubkey::new_unique(),
+            title: "Test Proposal".to_string(),
+            description: "Test description".to_string(),
+            execution_data: vec![],
+            for_votes: 0,
+            against_votes: 0,
+            abstain_votes: 0,
+            status: ProposalStatus::Active,
+            vote_start: 1000,
+            vote_end: 2000,
+            executed: false,
+            execution_timestamp: 0,
+            bump: 0,
+        }
+    }
 
-    // ============================================================================
-    // Proposal Tests
-    // ============================================================================
+    fn create_treasury() -> Treasury {
+        Treasury {
+            balance: 1000,
+            authorized_spender: Pubkey::new_unique(),
+        }
+    }
+
+    fn create_vote() -> Vote {
+        Vote {
+            voter: Pubkey::new_unique(),
+            proposal: Pubkey::new_unique(),
+            vote_type: VoteType::For,
+            weight: 100,
+            timestamp: 1000,
+            bump: 0,
+        }
+    }
+
+    // === Proposal Tests ===
 
     #[test]
     fn test_proposal_default_state() {
         let proposal = Proposal::default();
-        assert_eq!(proposal.id, 0);
         assert_eq!(proposal.title, "");
         assert_eq!(proposal.description, "");
-        assert_eq!(proposal.voting_start, 0);
-        assert_eq!(proposal.voting_end, 0);
+        assert_eq!(proposal.for_votes, 0);
+        assert_eq!(proposal.against_votes, 0);
     }
 
     #[test]
     fn test_proposal_creation() {
-        let proposer = Pubkey::new_unique();
-        let now: i64 = 1_000_000;
+        let proposal = create_proposal();
+        assert_eq!(proposal.title, "Test Proposal");
+        assert_eq!(proposal.status, ProposalStatus::Active);
+        assert!(!proposal.executed);
+    }
 
-        let proposal = Proposal {
-            id: 1,
-            proposer,
-            title: "Budget Allocation".to_string(),
-            description: "Allocate 1M tokens to marketing".to_string(),
-            voting_start: now,
-            voting_end: now + VOTING_PERIOD,
+    #[test]
+    fn test_proposal_title_length() {
+        let mut proposal = create_proposal();
+        proposal.title = "A".to_string();
+        assert_eq!(proposal.title.len(), 1);
+    }
+
+    #[test]
+    fn test_proposal_vote_counts() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 100;
+        proposal.against_votes = 50;
+        proposal.abstain_votes = 25;
+        assert_eq!(proposal.for_votes, 100);
+        assert_eq!(proposal.against_votes, 50);
+        assert_eq!(proposal.abstain_votes, 25);
+    }
+
+    #[test]
+    fn test_proposal_total_votes() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 100;
+        proposal.against_votes = 50;
+        proposal.abstain_votes = 25;
+        let total = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
+        assert_eq!(total, 175);
+    }
+
+    #[test]
+    fn test_proposal_status_active() {
+        let proposal = create_proposal();
+        assert_eq!(proposal.status, ProposalStatus::Active);
+    }
+
+    #[test]
+    fn test_proposal_vote_timing() {
+        let mut proposal = create_proposal();
+        proposal.vote_start = 1000;
+        proposal.vote_end = 2000;
+        assert_eq!(proposal.vote_end - proposal.vote_start, 1000);
+    }
+
+    #[test]
+    fn test_proposal_execution_flag() {
+        let mut proposal = create_proposal();
+        assert!(!proposal.executed);
+        proposal.executed = true;
+        assert!(proposal.executed);
+    }
+
+    #[test]
+    fn test_proposal_execution_timestamp() {
+        let mut proposal = create_proposal();
+        proposal.execution_timestamp = 5000;
+        assert_eq!(proposal.execution_timestamp, 5000);
+    }
+
+    // === Vote Tests ===
+
+    #[test]
+    fn test_vote_creation() {
+        let vote = create_vote();
+        assert_eq!(vote.weight, 100);
+        assert_eq!(vote.vote_type, VoteType::For);
+    }
+
+    #[test]
+    fn test_vote_types() {
+        let vote_for = Vote {
+            vote_type: VoteType::For,
+            ..create_vote()
+        };
+        let vote_against = Vote {
+            vote_type: VoteType::Against,
+            ..create_vote()
+        };
+        let vote_abstain = Vote {
+            vote_type: VoteType::Abstain,
+            ..create_vote()
         };
 
-        assert_eq!(proposal.id, 1);
-        assert_eq!(proposal.proposer, proposer);
-        assert_eq!(proposal.title, "Budget Allocation");
-        assert_eq!(proposal.voting_end - proposal.voting_start, VOTING_PERIOD);
+        assert_eq!(vote_for.vote_type, VoteType::For);
+        assert_eq!(vote_against.vote_type, VoteType::Against);
+        assert_eq!(vote_abstain.vote_type, VoteType::Abstain);
     }
 
     #[test]
-    fn test_multiple_proposals() {
-        let proposers = vec![
-            Pubkey::new_unique(),
-            Pubkey::new_unique(),
-            Pubkey::new_unique(),
-        ];
-
-        let mut proposals = vec![];
-        for (id, proposer) in proposers.iter().enumerate() {
-            proposals.push(Proposal {
-                id: id as u64 + 1,
-                proposer: *proposer,
-                title: format!("Proposal {}", id + 1),
-                description: format!("Description for proposal {}", id + 1),
-                voting_start: 1_000_000 + (id as i64 * 1_000_000),
-                voting_end: 1_000_000 + VOTING_PERIOD + (id as i64 * 1_000_000),
-            });
-        }
-
-        assert_eq!(proposals.len(), 3);
-        assert_eq!(proposals[0].id, 1);
-        assert_eq!(proposals[2].id, 3);
+    fn test_vote_weight() {
+        let mut vote = create_vote();
+        vote.weight = 500;
+        assert_eq!(vote.weight, 500);
     }
 
     #[test]
-    fn test_proposal_title_and_description() {
-        let proposal = Proposal {
-            id: 1,
-            proposer: Pubkey::new_unique(),
-            title: "Emergency Fund".to_string(),
-            description: "Create emergency fund for network security".to_string(),
-            voting_start: 1_000_000,
-            voting_end: 1_000_000 + VOTING_PERIOD,
-        };
-
-        assert!(!proposal.title.is_empty());
-        assert!(!proposal.description.is_empty());
-        assert!(proposal.title.len() <= 256); // Reasonable max
-    }
-
-    // ============================================================================
-    // Vote Tests
-    // ============================================================================
-
-    #[test]
-    fn test_vote_default_state() {
-        let vote = Vote::default();
-        assert_eq!(vote.proposal_id, 0);
-        assert_eq!(vote.amount, 0);
-        assert_eq!(vote.direction, 0); // abstain
+    fn test_vote_timestamp() {
+        let mut vote = create_vote();
+        vote.timestamp = 3000;
+        assert_eq!(vote.timestamp, 3000);
     }
 
     #[test]
-    fn test_vote_creation_yes() {
-        let voter = Pubkey::new_unique();
+    fn test_vote_link_to_proposal() {
+        let proposal_key = Pubkey::new_unique();
         let vote = Vote {
-            proposal_id: 1,
-            voter,
-            amount: 500_000,
-            direction: 1, // Yes
+            proposal: proposal_key,
+            ..create_vote()
         };
-
-        assert_eq!(vote.proposal_id, 1);
-        assert_eq!(vote.voter, voter);
-        assert_eq!(vote.amount, 500_000);
-        assert_eq!(vote.direction, 1);
+        assert_eq!(vote.proposal, proposal_key);
     }
 
     #[test]
-    fn test_vote_creation_no() {
-        let voter = Pubkey::new_unique();
+    fn test_vote_link_to_voter() {
+        let voter_key = Pubkey::new_unique();
         let vote = Vote {
-            proposal_id: 1,
-            voter,
-            amount: 250_000,
-            direction: 2, // No
+            voter: voter_key,
+            ..create_vote()
         };
+        assert_eq!(vote.voter, voter_key);
+    }
 
-        assert_eq!(vote.direction, 2);
+    // === Treasury Tests ===
+
+    #[test]
+    fn test_treasury_creation() {
+        let treasury = create_treasury();
+        assert_eq!(treasury.balance, 1000);
     }
 
     #[test]
-    fn test_vote_creation_abstain() {
-        let voter = Pubkey::new_unique();
-        let vote = Vote {
-            proposal_id: 1,
-            voter,
-            amount: 0,
-            direction: 0, // Abstain
-        };
-
-        assert_eq!(vote.direction, 0);
-        assert_eq!(vote.amount, 0);
+    fn test_treasury_balance() {
+        let mut treasury = create_treasury();
+        treasury.balance = 5000;
+        assert_eq!(treasury.balance, 5000);
     }
 
     #[test]
-    fn test_multiple_votes_same_proposal() {
-        let voters = vec![
-            Pubkey::new_unique(),
-            Pubkey::new_unique(),
-            Pubkey::new_unique(),
-        ];
-
-        let votes: Vec<Vote> = vec![
-            Vote {
-                proposal_id: 1,
-                voter: voters[0],
-                amount: 1000,
-                direction: 1, // Yes
-            },
-            Vote {
-                proposal_id: 1,
-                voter: voters[1],
-                amount: 500,
-                direction: 2, // No
-            },
-            Vote {
-                proposal_id: 1,
-                voter: voters[2],
-                amount: 0,
-                direction: 0, // Abstain
-            },
-        ];
-
-        assert_eq!(votes.len(), 3);
-
-        // Calculate totals
-        let yes_votes: u64 = votes
-            .iter()
-            .filter(|v| v.direction == 1)
-            .map(|v| v.amount)
-            .sum();
-        let no_votes: u64 = votes
-            .iter()
-            .filter(|v| v.direction == 2)
-            .map(|v| v.amount)
-            .sum();
-        let total_votes: u64 = votes.iter().map(|v| v.amount).sum();
-
-        assert_eq!(yes_votes, 1000);
-        assert_eq!(no_votes, 500);
-        assert_eq!(total_votes, 1500);
+    fn test_treasury_authorized_spender() {
+        let treasury = create_treasury();
+        assert_ne!(treasury.authorized_spender, Pubkey::default());
     }
 
     #[test]
-    fn test_vote_weight_aggregation() {
-        let proposal_id = 1;
-        let mut yes_weight = 0u64;
-        let mut no_weight = 0u64;
-
-        // Simulate votes
-        let vote_amounts = vec![100, 250, 150, 200, 300];
-
-        for (i, amount) in vote_amounts.iter().enumerate() {
-            if i % 2 == 0 {
-                yes_weight += amount;
-            } else {
-                no_weight += amount;
-            }
-        }
-
-        assert_eq!(yes_weight, 550); // 100 + 150 + 300
-        assert_eq!(no_weight, 450); // 250 + 200
+    fn test_treasury_add_funds() {
+        let mut treasury = create_treasury();
+        treasury.balance += 500;
+        assert_eq!(treasury.balance, 1500);
     }
 
-    // ============================================================================
-    // Treasury Tests
-    // ============================================================================
+    #[test]
+    fn test_treasury_spend_funds() {
+        let mut treasury = create_treasury();
+        treasury.balance -= 500;
+        assert_eq!(treasury.balance, 500);
+    }
 
     #[test]
-    fn test_treasury_default_state() {
+    fn test_treasury_insufficient_funds() {
+        let mut treasury = create_treasury();
+        treasury.balance = 100;
+        treasury.balance = treasury.balance.saturating_sub(500);
+        assert_eq!(treasury.balance, 0); // saturating_sub gives 0, not original value
+    }
+
+    // === Voting Logic Tests ===
+
+    #[test]
+    fn test_proposal_passed() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 600;
+        proposal.against_votes = 400;
+        proposal.abstain_votes = 0;
+
+        let total = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
+        let for_pct = (proposal.for_votes as f64 / total as f64) * 100.0;
+
+        assert!(for_pct > 50.0);
+    }
+
+    #[test]
+    fn test_proposal_rejected() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 400;
+        proposal.against_votes = 600;
+        proposal.abstain_votes = 0;
+
+        let total = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
+        let for_pct = (proposal.for_votes as f64 / total as f64) * 100.0;
+
+        assert!(for_pct < 50.0);
+    }
+
+    #[test]
+    fn test_proposal_tie() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 500;
+        proposal.against_votes = 500;
+        proposal.abstain_votes = 0;
+
+        let total = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
+        let for_pct = (proposal.for_votes as f64 / total as f64) * 100.0;
+
+        assert_eq!(for_pct, 50.0);
+    }
+
+    #[test]
+    fn test_abstain_votes_not_count() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 300;
+        proposal.against_votes = 300;
+        proposal.abstain_votes = 400;
+
+        let total = proposal.for_votes + proposal.against_votes;
+        let for_pct = (proposal.for_votes as f64 / total as f64) * 100.0;
+
+        assert_eq!(for_pct, 50.0);
+    }
+
+    // === Edge Cases ===
+
+    #[test]
+    fn test_proposal_no_votes() {
+        let proposal = create_proposal();
+        let total = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
+        assert_eq!(total, 0);
+    }
+
+    #[test]
+    fn test_vote_zero_weight() {
+        let mut vote = create_vote();
+        vote.weight = 0;
+        assert_eq!(vote.weight, 0);
+    }
+
+    #[test]
+    fn test_treasury_zero_balance() {
         let treasury = Treasury::default();
         assert_eq!(treasury.balance, 0);
     }
 
     #[test]
-    fn test_treasury_initialization() {
-        let authorized = Pubkey::new_unique();
-        let treasury = Treasury {
-            balance: TREASURY_INITIAL,
-            authorized_spender: authorized,
-        };
-
-        assert_eq!(treasury.balance, TREASURY_INITIAL);
-        assert_eq!(treasury.authorized_spender, authorized);
+    fn test_proposal_max_title_length() {
+        let mut proposal = create_proposal();
+        proposal.title = "A".repeat(100);
+        assert_eq!(proposal.title.len(), 100);
     }
 
     #[test]
-    fn test_treasury_withdrawal() {
-        let mut treasury = Treasury {
-            balance: 1_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
+    fn test_proposal_execution_data() {
+        let mut proposal = create_proposal();
+        proposal.execution_data = vec![1, 2, 3, 4, 5];
+        assert_eq!(proposal.execution_data.len(), 5);
+    }
 
-        let withdrawal = 250_000;
-        if treasury.balance >= withdrawal {
-            treasury.balance -= withdrawal;
-        }
+    // === Complex Scenarios ===
 
-        assert_eq!(treasury.balance, 750_000);
+    #[test]
+    fn test_voting_cycle() {
+        let mut proposal = create_proposal();
+        proposal.abstain_votes = 0;
+
+        proposal.for_votes = 100;
+        proposal.against_votes = 50;
+
+        let total = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
+        let for_pct = (proposal.for_votes as f64 / total as f64) * 100.0;
+
+        assert!((for_pct - 66.67).abs() < 0.1);
     }
 
     #[test]
-    fn test_treasury_deposit() {
-        let mut treasury = Treasury {
-            balance: 1_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
+    fn test_multiple_voters() {
+        let voters: Vec<Pubkey> = (0..5).map(|_| Pubkey::new_unique()).collect();
+        let total_weight: u64 = voters.len() as u64 * 100;
 
-        let deposit = 500_000;
-        treasury.balance = treasury.balance.checked_add(deposit).unwrap_or(u64::MAX);
-
-        assert_eq!(treasury.balance, 1_500_000);
+        assert_eq!(total_weight, 500);
     }
 
     #[test]
-    fn test_treasury_multiple_withdrawals() {
-        let mut treasury = Treasury {
-            balance: 5_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
+    fn test_proposal_status_transitions() {
+        let mut proposal = create_proposal();
 
-        let withdrawals = vec![500_000, 750_000, 250_000];
+        assert_eq!(proposal.status, ProposalStatus::Active);
 
-        for withdrawal in withdrawals {
-            if treasury.balance >= withdrawal {
-                treasury.balance -= withdrawal;
-            }
-        }
+        proposal.status = ProposalStatus::Passed;
+        assert_eq!(proposal.status, ProposalStatus::Passed);
 
-        assert_eq!(treasury.balance, 3_500_000);
+        proposal.executed = true;
+        proposal.status = ProposalStatus::Executed;
+        assert_eq!(proposal.status, ProposalStatus::Executed);
     }
 
     #[test]
-    fn test_treasury_insufficient_balance() {
-        let treasury = Treasury {
-            balance: 100_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
-
-        let withdrawal = 150_000;
-        assert!(treasury.balance < withdrawal);
-    }
-
-    #[test]
-    fn test_treasury_balance_after_operations() {
-        let mut treasury = Treasury {
-            balance: 1_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
-
-        // Deposit
-        treasury.balance += 500_000;
-        assert_eq!(treasury.balance, 1_500_000);
-
-        // Withdraw
-        treasury.balance -= 200_000;
-        assert_eq!(treasury.balance, 1_300_000);
-
-        // Deposit
-        treasury.balance += 100_000;
-        assert_eq!(treasury.balance, 1_400_000);
-    }
-
-    // ============================================================================
-    // Proposal Lifecycle Tests
-    // ============================================================================
-
-    #[test]
-    fn test_proposal_voting_period() {
-        let now: i64 = 1_000_000;
-        let proposal = Proposal {
-            id: 1,
-            proposer: Pubkey::new_unique(),
-            title: "Test".to_string(),
-            description: "Test proposal".to_string(),
-            voting_start: now,
-            voting_end: now + VOTING_PERIOD,
-        };
-
-        // Check if voting is active at different times
-        assert!(now >= proposal.voting_start);
-        assert!(now <= proposal.voting_end);
-
-        // Check future time
-        let future_time = now + VOTING_PERIOD + 1;
-        assert!(future_time > proposal.voting_end); // Voting ended
-    }
-
-    #[test]
-    fn test_proposal_before_voting_starts() {
-        let now: i64 = 1_000_000;
-        let proposal = Proposal {
-            id: 1,
-            proposer: Pubkey::new_unique(),
-            title: "Future".to_string(),
-            description: "Future proposal".to_string(),
-            voting_start: now + 1_000_000,
-            voting_end: now + 1_000_000 + VOTING_PERIOD,
-        };
-
-        assert!(now < proposal.voting_start);
-    }
-
-    #[test]
-    fn test_proposal_voting_concluded() {
-        let now: i64 = 2_000_000;
-        let proposal = Proposal {
-            id: 1,
-            proposer: Pubkey::new_unique(),
-            title: "Past".to_string(),
-            description: "Past proposal".to_string(),
-            voting_start: 1_000_000,
-            voting_end: 1_500_000,
-        };
-
-        assert!(now > proposal.voting_end);
-    }
-
-    // ============================================================================
-    // Governance Decision Tests
-    // ============================================================================
-
-    #[test]
-    fn test_proposal_passes_simple_majority() {
-        let yes_votes = 600;
-        let no_votes = 400;
-        let total = yes_votes + no_votes;
-
-        let passes = yes_votes > no_votes && total >= VOTING_THRESHOLD;
-        assert!(passes);
-    }
-
-    #[test]
-    fn test_proposal_fails_simple_majority() {
-        let yes_votes = 400;
-        let no_votes = 600;
-        let total = yes_votes + no_votes;
-
-        let passes = yes_votes > no_votes && total >= VOTING_THRESHOLD;
-        assert!(!passes);
-    }
-
-    #[test]
-    fn test_proposal_fails_below_threshold() {
-        let yes_votes = 800;
-        let no_votes = 100;
-        let total = yes_votes + no_votes;
-
-        let passes = yes_votes > no_votes && total >= VOTING_THRESHOLD;
-        // Fails because total (900) < threshold (1000) despite clear majority
-        assert!(!passes);
-    }
-
-    #[test]
-    fn test_proposal_unanimity() {
-        let yes_votes = 1000;
-        let no_votes = 0;
-
-        let passes = yes_votes > no_votes;
-        assert!(passes);
-    }
-
-    #[test]
-    fn test_proposal_tie_fails() {
-        let yes_votes = 500;
-        let no_votes = 500;
-
-        let passes = yes_votes > no_votes; // Strict majority required
-        assert!(!passes);
-    }
-
-    // ============================================================================
-    // Multi-Proposal Scenarios
-    // ============================================================================
-
-    #[test]
-    fn test_sequential_proposals() {
-        let mut proposals = vec![];
-
-        for i in 0..5 {
-            proposals.push(Proposal {
-                id: i + 1,
-                proposer: Pubkey::new_unique(),
-                title: format!("Proposal {}", i + 1),
-                description: format!("Description {}", i + 1),
-                voting_start: 1_000_000 + (i as i64 * 100_000),
-                voting_end: 1_000_000 + VOTING_PERIOD + (i as i64 * 100_000),
-            });
-        }
-
-        assert_eq!(proposals.len(), 5);
-        for (i, prop) in proposals.iter().enumerate() {
-            assert_eq!(prop.id, (i + 1) as u64);
-        }
-    }
-
-    #[test]
-    fn test_concurrent_voting_on_different_proposals() {
-        let proposal1 = Proposal {
-            id: 1,
-            proposer: Pubkey::new_unique(),
-            title: "Proposal 1".to_string(),
-            description: "First proposal".to_string(),
-            voting_start: 1_000_000,
-            voting_end: 1_000_000 + VOTING_PERIOD,
-        };
-
-        let proposal2 = Proposal {
-            id: 2,
-            proposer: Pubkey::new_unique(),
-            title: "Proposal 2".to_string(),
-            description: "Second proposal".to_string(),
-            voting_start: 1_000_000,
-            voting_end: 1_000_000 + VOTING_PERIOD,
-        };
-
-        let voter1 = Pubkey::new_unique();
-        let voter2 = Pubkey::new_unique();
-
-        let votes = vec![
-            Vote {
-                proposal_id: 1,
-                voter: voter1,
-                amount: 1000,
-                direction: 1,
-            },
-            Vote {
-                proposal_id: 2,
-                voter: voter1,
-                amount: 1000,
-                direction: 2,
-            },
-            Vote {
-                proposal_id: 1,
-                voter: voter2,
-                amount: 500,
-                direction: 2,
-            },
-            Vote {
-                proposal_id: 2,
-                voter: voter2,
-                amount: 500,
-                direction: 1,
-            },
-        ];
-
-        assert_eq!(votes.len(), 4);
-
-        // Proposal 1: Yes=1000, No=500
-        let p1_yes: u64 = votes
-            .iter()
-            .filter(|v| v.proposal_id == 1 && v.direction == 1)
-            .map(|v| v.amount)
-            .sum();
-        let p1_no: u64 = votes
-            .iter()
-            .filter(|v| v.proposal_id == 1 && v.direction == 2)
-            .map(|v| v.amount)
-            .sum();
-
-        // Proposal 2: Yes=500, No=1000
-        let p2_yes: u64 = votes
-            .iter()
-            .filter(|v| v.proposal_id == 2 && v.direction == 1)
-            .map(|v| v.amount)
-            .sum();
-        let p2_no: u64 = votes
-            .iter()
-            .filter(|v| v.proposal_id == 2 && v.direction == 2)
-            .map(|v| v.amount)
-            .sum();
-
-        assert!(p1_yes > p1_no); // P1 passes
-        assert!(p2_no > p2_yes); // P2 fails
-    }
-
-    // ============================================================================
-    // Authority and Permission Tests
-    // ============================================================================
-
-    #[test]
-    fn test_authority_validation() {
-        let authority1 = Pubkey::new_unique();
-        let authority2 = Pubkey::new_unique();
-
-        let treasury = Treasury {
-            balance: 1_000_000,
-            authorized_spender: authority1,
-        };
-
-        assert_eq!(treasury.authorized_spender, authority1);
-        assert_ne!(treasury.authorized_spender, authority2);
-    }
-
-    #[test]
-    fn test_authority_transfer() {
-        let mut treasury = Treasury {
-            balance: 1_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
-
-        let old_auth = treasury.authorized_spender;
-        let new_auth = Pubkey::new_unique();
-
-        treasury.authorized_spender = new_auth;
-
-        assert_eq!(treasury.authorized_spender, new_auth);
-        assert_ne!(treasury.authorized_spender, old_auth);
-    }
-
-    // ============================================================================
-    // Edge Cases and Boundary Tests
-    // ============================================================================
-
-    #[test]
-    fn test_maximum_proposal_id() {
-        let proposal = Proposal {
-            id: u64::MAX,
-            proposer: Pubkey::new_unique(),
-            title: "Max ID".to_string(),
-            description: "Proposal with max ID".to_string(),
-            voting_start: 1_000_000,
-            voting_end: 1_000_000 + VOTING_PERIOD,
-        };
-
-        assert_eq!(proposal.id, u64::MAX);
-    }
-
-    #[test]
-    fn test_very_large_voting_weight() {
-        let vote = Vote {
-            proposal_id: 1,
-            voter: Pubkey::new_unique(),
-            amount: u64::MAX / 2,
-            direction: 1,
-        };
-
-        assert_eq!(vote.amount, u64::MAX / 2);
-    }
-
-    #[test]
-    fn test_treasury_max_balance() {
-        let treasury = Treasury {
-            balance: u64::MAX,
-            authorized_spender: Pubkey::new_unique(),
-        };
-
+    fn test_treasury_large_balance() {
+        let mut treasury = create_treasury();
+        treasury.balance = u64::MAX;
         assert_eq!(treasury.balance, u64::MAX);
     }
 
-    // ============================================================================
-    // State Consistency Tests
-    // ============================================================================
+    #[test]
+    fn test_proposal_init_space() {
+        let space = Proposal::INIT_SPACE;
+        assert!(space > 0);
+    }
 
     #[test]
-    fn test_proposal_state_consistency() {
-        let mut proposal = Proposal {
-            id: 1,
-            proposer: Pubkey::new_unique(),
-            title: "Original".to_string(),
-            description: "Original description".to_string(),
-            voting_start: 1_000_000,
-            voting_end: 1_000_000 + VOTING_PERIOD,
+    fn test_vote_init_space() {
+        let space = Vote::INIT_SPACE;
+        assert!(space > 0);
+    }
+
+    #[test]
+    fn test_treasury_init_space() {
+        let space = Treasury::INIT_SPACE;
+        assert!(space > 0);
+    }
+
+    #[test]
+    fn test_vote_bump_tracking() {
+        let mut vote = create_vote();
+        vote.bump = 42;
+        assert_eq!(vote.bump, 42);
+    }
+
+    #[test]
+    fn test_proposal_bump_tracking() {
+        let mut proposal = create_proposal();
+        proposal.bump = 42;
+        assert_eq!(proposal.bump, 42);
+    }
+
+    #[test]
+    fn test_treasury_authorized_spender_change() {
+        let mut treasury = create_treasury();
+        let new_spender = Pubkey::new_unique();
+        treasury.authorized_spender = new_spender;
+        assert_eq!(treasury.authorized_spender, new_spender);
+    }
+
+    #[test]
+    fn test_proposal_execution_data_empty() {
+        let proposal = create_proposal();
+        assert!(proposal.execution_data.is_empty());
+    }
+
+    #[test]
+    fn test_proposal_all_fields_set() {
+        let proposer = Pubkey::new_unique();
+        let proposal = Proposal {
+            proposer,
+            title: "Full Proposal".to_string(),
+            description: "Full description".to_string(),
+            execution_data: vec![1, 2, 3],
+            for_votes: 1000,
+            against_votes: 200,
+            abstain_votes: 50,
+            status: ProposalStatus::Active,
+            vote_start: 1000,
+            vote_end: 2000,
+            executed: false,
+            execution_timestamp: 0,
+            bump: 1,
         };
 
-        // Verify state
-        let original_id = proposal.id;
-        let original_proposer = proposal.proposer;
-
-        // Simulate update (metadata might be updated)
-        proposal.title = "Updated".to_string();
-
-        // Critical fields should not change
-        assert_eq!(proposal.id, original_id);
-        assert_eq!(proposal.proposer, original_proposer);
+        assert_eq!(proposal.proposer, proposer);
+        assert_eq!(proposal.title, "Full Proposal");
+        assert_eq!(proposal.for_votes, 1000);
     }
 
     #[test]
-    fn test_vote_immutability() {
-        let vote = Vote {
-            proposal_id: 1,
-            voter: Pubkey::new_unique(),
-            amount: 1000,
-            direction: 1,
-        };
-
-        // Verify vote data
-        assert_eq!(vote.proposal_id, 1);
-        assert_eq!(vote.amount, 1000);
-        assert_eq!(vote.direction, 1);
-
-        // In real system, votes are immutable once cast
+    fn test_proposal_for_votes_overflow() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = u64::MAX;
+        let result = proposal.for_votes.checked_add(1);
+        assert!(result.is_none());
     }
 
     #[test]
-    fn test_treasury_balance_integrity() {
-        let mut treasury = Treasury {
-            balance: 1_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
-
-        let initial = treasury.balance;
-
-        // Sequence of operations
-        treasury.balance -= 100_000;
-        treasury.balance += 200_000;
-        treasury.balance -= 50_000;
-
-        assert_eq!(treasury.balance, initial - 100_000 + 200_000 - 50_000);
-    }
-
-    // ============================================================================
-    // Voting Pattern Tests
-    // ============================================================================
-
-    #[test]
-    fn test_voting_distribution() {
-        let proposal_id = 1;
-
-        let votes = vec![
-            Vote {
-                proposal_id,
-                voter: Pubkey::new_unique(),
-                amount: 100,
-                direction: 1,
-            },
-            Vote {
-                proposal_id,
-                voter: Pubkey::new_unique(),
-                amount: 150,
-                direction: 1,
-            },
-            Vote {
-                proposal_id,
-                voter: Pubkey::new_unique(),
-                amount: 75,
-                direction: 2,
-            },
-            Vote {
-                proposal_id,
-                voter: Pubkey::new_unique(),
-                amount: 125,
-                direction: 2,
-            },
-            Vote {
-                proposal_id,
-                voter: Pubkey::new_unique(),
-                amount: 0,
-                direction: 0,
-            },
-        ];
-
-        let yes_votes: u64 = votes
-            .iter()
-            .filter(|v| v.direction == 1)
-            .map(|v| v.amount)
-            .sum();
-        let no_votes: u64 = votes
-            .iter()
-            .filter(|v| v.direction == 2)
-            .map(|v| v.amount)
-            .sum();
-
-        assert_eq!(yes_votes, 250);
-        assert_eq!(no_votes, 200);
+    fn test_treasury_balance_overflow() {
+        let mut treasury = create_treasury();
+        treasury.balance = u64::MAX;
+        let result = treasury.balance.checked_add(1);
+        assert!(result.is_none());
     }
 
     #[test]
-    fn test_weighted_voting_power() {
-        let voter1 = Pubkey::new_unique();
-        let voter2 = Pubkey::new_unique();
-        let voter3 = Pubkey::new_unique();
-
-        // Different voting powers
-        let votes = vec![
-            Vote {
-                proposal_id: 1,
-                voter: voter1,
-                amount: 10000,
-                direction: 1,
-            },
-            Vote {
-                proposal_id: 1,
-                voter: voter2,
-                amount: 5000,
-                direction: 1,
-            },
-            Vote {
-                proposal_id: 1,
-                voter: voter3,
-                amount: 1000,
-                direction: 2,
-            },
-        ];
-
-        let voter1_power: u64 = votes
-            .iter()
-            .filter(|v| v.voter == voter1)
-            .map(|v| v.amount)
-            .sum();
-        let voter2_power: u64 = votes
-            .iter()
-            .filter(|v| v.voter == voter2)
-            .map(|v| v.amount)
-            .sum();
-        let voter3_power: u64 = votes
-            .iter()
-            .filter(|v| v.voter == voter3)
-            .map(|v| v.amount)
-            .sum();
-
-        assert_eq!(voter1_power, 10000);
-        assert_eq!(voter2_power, 5000);
-        assert_eq!(voter3_power, 1000);
-    }
-
-    // ============================================================================
-    // Treasury Fund Distribution Tests
-    // ============================================================================
-
-    #[test]
-    fn test_treasury_fund_allocation() {
-        let mut treasury = Treasury {
-            balance: 10_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
-
-        let allocation_budget = 2_000_000;
-
-        if treasury.balance >= allocation_budget {
-            treasury.balance -= allocation_budget;
-        }
-
-        assert_eq!(treasury.balance, 8_000_000);
+    fn test_vote_weight_overflow() {
+        let mut vote = create_vote();
+        vote.weight = u64::MAX;
+        let result = vote.weight.checked_add(1);
+        assert!(result.is_none());
     }
 
     #[test]
-    fn test_treasury_quarterly_distribution() {
-        let mut treasury = Treasury {
-            balance: 4_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
+    fn test_proposal_time_calculation() {
+        let mut proposal = create_proposal();
+        proposal.vote_start = 1000000;
+        proposal.vote_end = 2000000;
+        let duration = proposal.vote_end - proposal.vote_start;
+        assert_eq!(duration, 1000000);
+    }
 
-        let quarterly_amount = 1_000_000;
+    #[test]
+    fn test_voting_quorum_check() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 100;
+        proposal.against_votes = 0;
+        proposal.abstain_votes = 0;
 
-        // Simulate 4 quarterly distributions
-        for _ in 0..4 {
-            if treasury.balance >= quarterly_amount {
-                treasury.balance -= quarterly_amount;
-            }
-        }
+        let total = proposal.for_votes + proposal.against_votes + proposal.abstain_votes;
+        assert!(total > 0);
+    }
 
+    #[test]
+    fn test_multiple_proposals_independence() {
+        let mut p1 = create_proposal();
+        let mut p2 = create_proposal();
+
+        p1.for_votes = 100;
+        p2.for_votes = 200;
+
+        assert_eq!(p1.for_votes, 100);
+        assert_eq!(p2.for_votes, 200);
+    }
+
+    #[test]
+    fn test_proposal_passed_threshold() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 501;
+        proposal.against_votes = 499;
+
+        let total = proposal.for_votes + proposal.against_votes;
+        let for_pct = (proposal.for_votes as u128 * 10000 / total as u128) as u64;
+
+        assert!(for_pct >= 5000);
+    }
+
+    #[test]
+    fn test_proposal_failed_threshold() {
+        let mut proposal = create_proposal();
+        proposal.for_votes = 499;
+        proposal.against_votes = 501;
+
+        let total = proposal.for_votes + proposal.against_votes;
+        let for_pct = (proposal.for_votes as u128 * 10000 / total as u128) as u64;
+
+        assert!(for_pct < 5000);
+    }
+
+    #[test]
+    fn test_execution_after_voting_ends() {
+        let mut proposal = create_proposal();
+        proposal.vote_end = 1000;
+        proposal.for_votes = 600;
+        proposal.against_votes = 100;
+
+        let current_time = 1500i64;
+        assert!(current_time >= proposal.vote_end);
+    }
+
+    #[test]
+    fn test_proposal_with_execution() {
+        let mut proposal = create_proposal();
+        proposal.executed = true;
+        proposal.execution_timestamp = 3000;
+
+        assert!(proposal.executed);
+        assert_eq!(proposal.execution_timestamp, 3000);
+    }
+
+    #[test]
+    fn test_vote_after_deadline() {
+        let proposal = create_proposal();
+        let current_time = 3000i64;
+
+        assert!(current_time >= proposal.vote_end);
+    }
+
+    #[test]
+    fn test_treasury_spent_full() {
+        let mut treasury = create_treasury();
+        treasury.balance = 1000;
+        treasury.balance = treasury.balance.saturating_sub(1000);
         assert_eq!(treasury.balance, 0);
     }
 
     #[test]
-    fn test_treasury_emergency_withdrawal() {
-        let mut treasury = Treasury {
-            balance: 5_000_000,
-            authorized_spender: Pubkey::new_unique(),
-        };
+    fn test_proposal_default_bump() {
+        let proposal = Proposal::default();
+        assert_eq!(proposal.bump, 0);
+    }
 
-        let emergency_amount = 2_000_000;
+    #[test]
+    fn test_vote_default_bump() {
+        let vote = Vote::default();
+        assert_eq!(vote.bump, 0);
+    }
 
-        if treasury.balance >= emergency_amount {
-            treasury.balance -= emergency_amount;
-        }
+    #[test]
+    fn test_proposal_status_default() {
+        let proposal = Proposal::default();
+        assert_eq!(proposal.status, ProposalStatus::Active);
+    }
 
-        assert_eq!(treasury.balance, 3_000_000);
+    #[test]
+    fn test_vote_type_default() {
+        let vote = Vote::default();
+        assert_eq!(vote.vote_type, VoteType::For);
+    }
+
+    #[test]
+    fn test_proposal_execution_timestamp_default() {
+        let proposal = Proposal::default();
+        assert_eq!(proposal.execution_timestamp, 0);
+    }
+
+    #[test]
+    fn test_treasury_default_authorized() {
+        let treasury = Treasury::default();
+        assert_eq!(treasury.authorized_spender, Pubkey::default());
+    }
+
+    #[test]
+    fn test_vote_timestamp_default() {
+        let vote = Vote::default();
+        assert_eq!(vote.timestamp, 0);
     }
 }

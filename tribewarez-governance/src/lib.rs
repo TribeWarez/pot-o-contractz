@@ -4,6 +4,8 @@
 
 use anchor_lang::prelude::*;
 
+declare_id!("4K5vHkCcA3x4FxFN1SPvX5LMFkrvGxjghtXn6r8xf8xY");
+
 pub mod errors;
 pub mod instructions;
 pub mod state;
@@ -12,38 +14,24 @@ pub use errors::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("4K5vHkCcA3x4FxFN1SPvX5LMFkrvGxjghtXn6r8xf8xY");
-
 #[program]
 pub mod tribewarez_governance {
     use super::*;
 
-    // Placeholder functions - to be implemented
-    pub fn create_proposal(ctx: Context<CreateProposal>) -> Result<()> {
-        Ok(())
+    pub fn create_proposal(
+        ctx: Context<CreateProposal>,
+        title: String,
+        description: String,
+        execution_data: Vec<u8>,
+    ) -> Result<()> {
+        instructions::create_proposal::create_proposal(ctx, title, description, execution_data)
     }
 
-    pub fn cast_vote(ctx: Context<CastVote>) -> Result<()> {
-        Ok(())
+    pub fn cast_vote(ctx: Context<CastVote>, vote_type: VoteType, weight: u64) -> Result<()> {
+        instructions::cast_vote::cast_vote(ctx, vote_type, weight)
     }
 
     pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
-        Ok(())
+        instructions::execute_proposal::execute_proposal(ctx)
     }
-}
-
-// Placeholder context definitions
-#[derive(Accounts)]
-pub struct CreateProposal<'info> {
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct CastVote<'info> {
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct ExecuteProposal<'info> {
-    pub system_program: Program<'info, System>,
 }
