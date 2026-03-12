@@ -1,0 +1,18 @@
+[package]
+name = "tribewarez-governance"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anchor-lang = { workspace = true, features = ["init-if-needed"] }
+anchor-spl = { workspace = true }
+solana-program = "1.18"
+spl-token = "4.0"
+pot-o-core = "0.1.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[[test]]
+name = "integration_tests"
+path = "tests/integration_tests.rs"
