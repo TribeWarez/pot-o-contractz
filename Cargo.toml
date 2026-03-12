@@ -6,6 +6,8 @@ members = [
     "tribewarez-pot-o",
     "tribewarez-tokens",
     "tribewarez-governance",
+    "tribewarez-bridge",
+    "tribewarez-router",
 ]
 resolver = "2"
 

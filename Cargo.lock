@@ -2512,6 +2512,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tribewarez-bridge"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "pot-o-core 0.1.0",
+ "solana-program",
+ "spl-token",
+]
+
+[[package]]
 name = "tribewarez-governance"
 version = "0.1.0"
 dependencies = [
@@ -2529,6 +2540,17 @@ dependencies = [
  "anchor-lang",
  "pot-o-core 0.2.0",
  "solana-sdk",
+]
+
+[[package]]
+name = "tribewarez-router"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "pot-o-core 0.1.0",
+ "solana-program",
+ "spl-token",
 ]
 
 [[package]]
