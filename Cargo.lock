@@ -2534,6 +2534,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tribewarez-liquidity"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "pot-o-core 0.1.0",
+ "solana-program",
+ "spl-token",
+]
+
+[[package]]
 name = "tribewarez-pot-o"
 version = "0.2.0"
 dependencies = [

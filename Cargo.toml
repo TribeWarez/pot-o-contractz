@@ -8,6 +8,7 @@ members = [
     "tribewarez-governance",
     "tribewarez-bridge",
     "tribewarez-router",
+    "tribewarez-liquidity",
 ]
 resolver = "2"
 
