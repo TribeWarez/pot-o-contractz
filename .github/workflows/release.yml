@@ -24,6 +24,11 @@ jobs:
       - run: cargo publish -p tribewarez-vault
       - run: cargo publish -p tribewarez-swap
       - run: cargo publish -p tribewarez-pot-o
+      - run: cargo publish -p tribewarez-tokens
+      - run: cargo publish -p tribewarez-governance
+      - run: cargo publish -p tribewarez-bridge
+      - run: cargo publish -p tribewarez-router
+      - run: cargo publish -p tribewarez-liquidity
       - name: Determine release tag
         id: release_tag
         run: |
