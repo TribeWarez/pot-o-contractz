@@ -1,6 +1,6 @@
 [package]
 name = "tribewarez-swap"
-version = "0.2.0"
+version = "0.3.2"
 description = "PTtC Token Swap AMM for Tribewarez DeFi with tensor network support"
 edition = "2021"
 license = "MIT"

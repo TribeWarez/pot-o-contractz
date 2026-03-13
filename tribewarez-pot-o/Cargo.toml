@@ -1,6 +1,6 @@
 [package]
 name = "tribewarez-pot-o"
-version = "0.2.0"
+version = "0.3.2"
 description = "PoT-O (Proof of Tensor Optimizations) on-chain program with tensor network support"
 edition = "2021"
 license = "MIT"
