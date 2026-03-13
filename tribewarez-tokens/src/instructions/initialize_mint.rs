@@ -20,7 +20,7 @@ pub fn handle(
 
     // Validate inflation rate if provided
     if let Some(rate) = inflation_rate {
-        require!(rate >= 0.0 && rate <= 1.0, TokenError::InvalidTokenAmount);
+        require!((0.0..=1.0).contains(&rate), TokenError::InvalidTokenAmount);
     }
 
     let mint = &mut ctx.accounts.mint;

@@ -36,7 +36,6 @@ pub fn transfer_wrapped(ctx: Context<TransferWrapped>, amount: u64) -> Result<()
         ctx.accounts.sender_token_account.amount >= amount,
         BridgeError::InsufficientBalance
     );
-    require!(amount <= u64::MAX, BridgeError::TransferAmountTooLarge);
 
     // Transfer wrapped tokens from sender to recipient
     let transfer_cpi = Transfer {

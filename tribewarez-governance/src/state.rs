@@ -2,31 +2,21 @@
 
 use anchor_lang::prelude::*;
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub enum ProposalStatus {
+    #[default]
     Active,
     Passed,
     Rejected,
     Executed,
 }
 
-impl Default for ProposalStatus {
-    fn default() -> Self {
-        ProposalStatus::Active
-    }
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub enum VoteType {
+    #[default]
     For,
     Against,
     Abstain,
-}
-
-impl Default for VoteType {
-    fn default() -> Self {
-        VoteType::For
-    }
 }
 
 #[account]

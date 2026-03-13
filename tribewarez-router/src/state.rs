@@ -90,12 +90,11 @@ pub struct SwapQuote {
 }
 
 impl SwapQuote {
-    pub fn calculate_price_impact(&self, amount_in: u64, old_price: u64, new_price: u64) -> u64 {
+    pub fn calculate_price_impact(&self, _amount_in: u64, old_price: u64, new_price: u64) -> u64 {
         if old_price == 0 {
             return 0;
         }
-        let impact = ((old_price - new_price) * 10000) / old_price;
-        impact
+        ((old_price - new_price) * 10000) / old_price
     }
 
     pub fn validate_slippage(&self, min_output: u64) -> Result<()> {

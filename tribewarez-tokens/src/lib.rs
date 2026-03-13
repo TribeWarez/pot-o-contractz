@@ -3,6 +3,8 @@
 //! Implements token minting, burning, and transfers for the three-token ecosystem.
 //! Supports AUMCOIN, TRIBECOIN, and RAVECOIN with different economic models.
 
+#![allow(unexpected_cfgs, unused_imports, ambiguous_glob_reexports)]
+
 use anchor_lang::prelude::*;
 
 pub mod errors;

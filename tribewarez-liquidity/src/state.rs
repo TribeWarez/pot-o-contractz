@@ -184,12 +184,7 @@ impl PriceFeed {
         if self.last_update == 0 {
             return Ok(self.price_a_to_b);
         }
-        if self.last_update == self.last_update {
-            // Simple TWAP calculation without sysvar
-            let twap = old_price.saturating_add(self.price_a_to_b) / 2;
-            Ok(twap)
-        } else {
-            Ok(self.price_a_to_b)
-        }
+        let twap = old_price.saturating_add(self.price_a_to_b) / 2;
+        Ok(twap)
     }
 }
