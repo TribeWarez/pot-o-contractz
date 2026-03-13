@@ -2,6 +2,12 @@
 name = "tribewarez-bridge"
 version = "0.3.2"
 edition = "2021"
+description = "Cross-chain token bridge for Tribewarez DeFi (NMTC/PPTC wrapping)"
+license = "MIT"
+repository = "https://github.com/TribeWarez/pot-o-contractz"
+homepage = "https://defi.tribewarez.com"
+keywords = ["solana", "anchor", "tribewarez", "bridge", "cross-chain"]
+categories = ["cryptography::cryptocurrencies"]
 
 [dependencies]
 anchor-lang = { workspace = true, features = ["init-if-needed"] }

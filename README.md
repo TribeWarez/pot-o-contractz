@@ -7,11 +7,13 @@
 
 Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PTtC (Pumped TRIBE-Test Coin) operations.
 
-**v0.2.x**: Dependency Injection architecture with Tensor Network integration for quantum-inspired reward calculations.
+**v0.3.x**: PoT-O Contractz - Token ecosystem programs with governance, bridging, routing, and liquidity pools.
 
 ## Programs Overview
 
-### 0. PoT-O Program (`tribewarez-pot-o`)
+### Core Programs (v0.2.x - Tensor Network Integration)
+
+#### 0. PoT-O Program (`tribewarez-pot-o`)
 - **Purpose**: On-chain validation of Proof of Tensor Optimizations mining proofs
 - **Features**:
   - Config and miner registration
@@ -19,7 +21,7 @@ Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PT
   - Reward distribution and difficulty adjustment
   - Claim rewards (TW-RPC-001 aligned)
 
-### 1. Staking Program (`tribewarez-staking`)
+#### 1. Staking Program (`tribewarez-staking`)
 - **Purpose**: Stake PTtC tokens to earn rewards over time
 - **Features**:
   - Flexible and time-locked staking pools
@@ -27,26 +29,95 @@ Solana programs (smart contracts) for the Tribewarez DeFi platform supporting PT
   - Compound rewards
   - Emergency unstake (forfeit rewards)
   - Admin pool management
+  - Tensor entanglement for cooperative staking
 
-### 2. Vault Program (`tribewarez-vault`)
+#### 2. Vault Program (`tribewarez-vault`)
 - **Purpose**: Secure token storage and escrow functionality
 - **Features**:
   - Personal vaults for users
   - Time-locked savings accounts
   - Two-party escrow with release conditions
   - Deposit/withdrawal with audit trail
+  - Dynamic locktime reduction based on network activity
 
-### 3. Swap Program (`tribewarez-swap`)
+#### 3. Swap Program (`tribewarez-swap`)
 - **Purpose**: Automated Market Maker (AMM) for token swaps
 - **Features**:
   - Constant product formula (x * y = k)
   - Liquidity provision with LP tokens
   - 0.30% swap fee (0.25% to LPs, 0.05% protocol)
   - Slippage protection
+  - Tensor-aware dynamic fee discounts
 
-## Architecture: v0.2.x Dependency Injection Pattern
+### PoT-O Contractz Programs (v0.3.x)
 
-### Service-Oriented Design
+#### 4. Tokens Program (`tribewarez-tokens`)
+- **Purpose**: Multi-token ecosystem management (AUMCOIN, TRIBECOIN, RAVECOIN)
+- **Features**:
+  - Token minting with supply caps
+  - Inflation rate configuration
+  - Burning and transfers
+  - Freeze/thaw account capabilities
+  - Metadata management (name, symbol, URI)
+
+#### 5. Governance Program (`tribewarez-governance`)
+- **Purpose**: DAO operations and proposal management
+- **Features**:
+  - Create and manage proposals
+  - Voting (For, Against, Abstain)
+  - Proposal execution with timelock
+  - Treasury management
+  - Quorum requirements
+
+#### 6. Bridge Program (`tribewarez-bridge`)
+- **Purpose**: Cross-chain token wrapping (NMTC/PPTC)
+- **Features**:
+  - Token deposit and withdrawal
+  - Wrapped token minting
+  - Pause/unpause functionality
+  - Admin-controlled bridge management
+
+#### 7. Router Program (`tribewarez-router`)
+- **Purpose**: Token swap routing and price queries
+- **Features**:
+  - Multi-hop swaps
+  - Price impact calculation
+  - Slippage tolerance validation
+  - Quote generation for frontend
+
+#### 8. Liquidity Program (`tribewarez-liquidity`)
+- **Purpose**: AMM-style liquidity pool management
+- **Features**:
+  - Create token pairs
+  - Add/remove liquidity
+  - Swap with dynamic fees
+  - TWAP price feeds
+  - Pool position tracking
+
+## Architecture: v0.3.x Multi-Program Design
+
+### Token Ecosystem Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Tribewarez DeFi                          │
+├─────────────────────────────────────────────────────────────┤
+│  Governance          │  Bridge          │  Router          │
+│  (tribewarez-        │  (tribewarez-   │  (tribewarez-    │
+│   governance)        │   bridge)        │   router)        │
+├─────────────────────────────────────────────────────────────┤
+│  Tokens (tribewarez-tokens)                                │
+│  - AUMCOIN    - TRIBECOIN    - RAVECOIN                   │
+├─────────────────────────────────────────────────────────────┤
+│  Liquidity (tribewarez-liquidity)                          │
+│  - Pool pairs  - LP tokens   - Swap logic                 │
+├─────────────────────────────────────────────────────────────┤
+│  Core (v0.2.x)                                             │
+│  - PoT-O   - Staking   - Vault   - Swap                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Dependency Injection Pattern (v0.2.x)
 
 All v0.2.x programs use a **Dependency Injection (DI) architecture** with abstract service traits:
 
@@ -63,7 +134,7 @@ pub trait RewardDistributor {
 
 ### ServiceRegistry Pattern
 
-Each program includes a `ServiceRegistry` that acts as a DI container:
+Each v0.2.x program includes a `ServiceRegistry` that acts as a DI container:
 
 ```rust
 pub struct ServiceRegistry {
@@ -119,83 +190,51 @@ Each miner/staker device has a coherence multiplier affecting:
 | CPU         | 0.6x      | Standard processors |
 | Mobile      | 0.4x      | Mobile devices |
 
-#### Event-Driven State Changes
-
-All state modifications emit events for off-chain tracking:
-
-```rust
-// In tribewarez-pot-o
-#[event]
-pub struct EntropyStateUpdated {
-    pub miner: Pubkey,
-    pub entropy_s: u64,
-    pub mutual_info_i: u64,
-    pub effective_distance: u64,
-}
-```
-
-### Migration from v0.1.x
-
-**Zero breaking changes!** Full ABI backward compatibility:
-
-1. **Instruction signatures**: Identical to v0.1.x
-2. **State layout**: New tensor fields appended (no reordering)
-3. **Legacy mode**: ServiceRegistry can use v0.1.x implementations
-4. **No account migration**: v0.2.0 reads v0.1.x accounts directly
-
-**Upgrade path**:
-```bash
-# 1. Deploy v0.2.0 alongside v0.1.x
-anchor deploy
-
-# 2. Enable gradually per pool
-solana rpc poto config --use-tensor-features true
-
-# 3. Monitor v0.2.0 vs v0.1.x behavior
-# Events help validate tensor calculations are working
-```
-
 ## Prerequisites
 
 - [Rust](https://rustup.rs/) (latest stable)
 - [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (v1.18+)
 - [Anchor CLI](https://www.anchor-lang.com/docs/installation) (v0.30+)
 
-## Installation
-
-```bash
-# Install Anchor CLI
-cargo install --git https://github.com/coral-xyz/anchor avm --locked
-avm install latest
-avm use latest
-
-# Install Solana CLI
-sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
-```
-
 ## Building
 
 ```bash
-cd programs
-
 # Build all programs
-anchor build
+cargo build
 
 # Build specific program
-anchor build -p tribewarez_pot_o
-anchor build -p tribewarez_staking
-anchor build -p tribewarez_vault
-anchor build -p tribewarez_swap
+cargo build -p tribewarez_pot_o
+cargo build -p tribewarez_staking
+cargo build -p tribewarez_vault
+cargo build -p tribewarez_swap
+cargo build -p tribewarez_tokens
+cargo build -p tribewarez_governance
+cargo build -p tribewarez_bridge
+cargo build -p tribewarez_router
+cargo build -p tribewarez_liquidity
 ```
 
 ## Testing
 
 ```bash
-# Run tests on localnet
-anchor test
+# Run all tests
+cargo test
 
 # Run tests with logs
-anchor test -- --nocapture
+cargo test -- --nocapture
+
+# Run tests for specific program
+cargo test -p tribewarez_tokens
+```
+
+## Linting
+
+```bash
+# Run clippy with strict warnings (CI mode)
+cargo clippy -- -D warnings
+
+# Check formatting
+cargo fmt --check
 ```
 
 ## Deployment
@@ -213,29 +252,29 @@ wallet = "~/.config/solana/id.json"
 
 ```bash
 # Generate new keypair for each program
+solana-keygen new -o target/deploy/tribewarez_pot_o-keypair.json
 solana-keygen new -o target/deploy/tribewarez_staking-keypair.json
 solana-keygen new -o target/deploy/tribewarez_vault-keypair.json
 solana-keygen new -o target/deploy/tribewarez_swap-keypair.json
+solana-keygen new -o target/deploy/tribewarez_tokens-keypair.json
+solana-keygen new -o target/deploy/tribewarez_governance-keypair.json
+solana-keygen new -o target/deploy/tribewarez_bridge-keypair.json
+solana-keygen new -o target/deploy/tribewarez_router-keypair.json
+solana-keygen new -o target/deploy/tribewarez_liquidity-keypair.json
 ```
 
 ### 3. Update Program IDs
 
-After generating keypairs, update the program IDs:
-
-```bash
-# Get the new program IDs
-solana-keygen pubkey target/deploy/tribewarez_staking-keypair.json
-solana-keygen pubkey target/deploy/tribewarez_vault-keypair.json
-solana-keygen pubkey target/deploy/tribewarez_swap-keypair.json
-```
-
-Update these addresses in:
+After generating keypairs, update the program addresses in each program's `src/lib.rs`:
 - `tribewarez-pot-o/src/lib.rs` - `declare_id!(...)`
 - `tribewarez-staking/src/lib.rs` - `declare_id!(...)`
 - `tribewarez-vault/src/lib.rs` - `declare_id!(...)`
 - `tribewarez-swap/src/lib.rs` - `declare_id!(...)`
-- `Anchor.toml` - `[programs.*]` sections
-- `src/contracts/config.ts` - Program ID constants (if present)
+- `tribewarez-tokens/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-governance/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-bridge/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-router/src/lib.rs` - `declare_id!(...)`
+- `tribewarez-liquidity/src/lib.rs` - `declare_id!(...)`
 
 ### 4. Deploy
 
@@ -245,81 +284,39 @@ solana airdrop 5 --url devnet
 
 # Deploy all programs
 anchor deploy
-
-# Deploy specific program
-anchor deploy -p tribewarez_staking
 ```
 
-### 5. Initialize Programs
+## Publishing (crates.io)
 
-After deployment, initialize the programs using the admin scripts or frontend:
+### v0.3.x Release
 
-```typescript
-// Example: Initialize staking pool
-import { StakingClient, PTTC_MINT } from '../contracts';
+All program crates are published to crates.io as part of the v0.3 line:
 
-const client = new StakingClient(connection);
-// ... initialize pool with admin wallet
+| Crate | Version | Description |
+|-------|---------|-------------|
+| tribewarez-pot-o | 0.3.2 | PoT-O mining validation |
+| tribewarez-staking | 0.3.2 | PTtC staking with tensor features |
+| tribewarez-vault | 0.3.2 | Vault and escrow |
+| tribewarez-swap | 0.3.2 | AMM swap |
+| tribewarez-tokens | 0.3.2 | Multi-token management |
+| tribewarez-governance | 0.3.2 | DAO governance |
+| tribewarez-bridge | 0.3.2 | Token bridging |
+| tribewarez-router | 0.3.2 | Swap routing |
+| tribewarez-liquidity | 0.3.2 | Liquidity pools |
+
+**Installation**:
+```toml
+[dependencies]
+tribewarez-pot-o = "0.3.2"
+tribewarez-staking = "0.3.2"
+tribewarez-vault = "0.3.2"
+tribewarez-swap = "0.3.2"
+tribewarez-tokens = "0.3.2"
+tribewarez-governance = "0.3.2"
+tribewarez-bridge = "0.3.2"
+tribewarez-router = "0.3.2"
+tribewarez-liquidity = "0.3.2"
 ```
-
-## Program Architecture
-
-### Service Traits by Program
-
-**tribewarez-pot-o**:
-- `ProofValidator`: Validate PoT-O mining proofs
-- `MinerManager`: Manage miner lifecycle and entropy
-- `RewardDistributor`: Calculate and distribute rewards
-- `TensorPoolService`: Calculate entropy and mutual information
-
-**tribewarez-staking**:
-- `StakingCalculator`: Compute time-based rewards with entropy factors
-- `EntanglementService`: Track pool coupling and unlock probability
-
-**tribewarez-vault**:
-- `VaultSecurityProvider`: Manage dynamic locktimes and early withdrawal fees
-
-**tribewarez-swap**:
-- `SwapCalculator`: Compute AMM prices with coherence fee adjustments
-
-### Account Structure
-
-**v0.2.0 State Layout** (ABI compatible with v0.1.x):
-
-```
-PotOConfig (v0.1.x fields)
-├── authority, min_difficulty, max_difficulty, ...
-├── [NEW v0.2.0] entropy_weight: u64
-├── [NEW v0.2.0] mutual_info_scale: u64
-├── [NEW v0.2.0] device_coherence_factors: [u64; 4]
-└── [RESERVED] padding: [u8; 256] for future expansion
-
-MinerAccount (v0.1.x fields)
-├── owner, total_hashes, pool_shares, ...
-├── [NEW v0.2.0] entropy_s: u64
-├── [NEW v0.2.0] mutual_info_i: u64
-├── [NEW v0.2.0] device_coherence: u64
-└── [RESERVED] padding: [u8; 256] for future expansion
-
-ProofRecord (v0.1.x fields)
-├── miner, proof_hash, difficulty, ...
-├── [NEW v0.2.0] entropy_contribution: u64
-└── [RESERVED] padding: [u8; 128] for future expansion
-```
-
-**Key Design**:
-- New fields always appended (no existing field reordering)
-- Padding reserved for future expansion (no re-deployment needed)
-- v0.1.x clients can read up to their expected struct size
-- v0.2.0 clients read all fields, using defaults for v0.1.x accounts
-
-### Security Features
-
-- **PDA-based account derivation**: Deterministic addresses prevent collisions
-- **Authority checks**: Only authorized signers can modify state
-- **Overflow protection**: All math uses checked operations
-- **Reentrancy protection**: State updates before CPI calls
-- **Time-lock enforcement**: Cannot unstake before unlock time
 
 ## Token Configuration
 
@@ -327,63 +324,6 @@ ProofRecord (v0.1.x fields)
 - Mint: `BikceVyDGWMNUTNhSKo789ThWZRfLr2q9TJYc4bLpump`
 - Decimals: 6
 - Network: Solana Mainnet (Pump.fun)
-
-## Frontend Integration
-
-The frontend SDK is located in `src/contracts/`:
-
-```typescript
-import { 
-  StakingClient, 
-  SwapClient, 
-  PTTC_MINT,
-  createStakingClient 
-} from './contracts';
-
-// Create client
-const stakingClient = createStakingClient(connection);
-
-// Stake tokens
-const instructions = await stakingClient.createStakeInstruction(
-  userPublicKey,
-  parseTokenAmount(100, 6), // 100 PTtC
-  PTTC_MINT
-);
-```
-
-React hooks are available in `src/hooks/`:
-- `useStaking()` - Staking operations
-- `useSwap()` - Token swap operations
-
-## Environment Variables
-
-```env
-VITE_RPC_ENDPOINT=https://api.mainnet-beta.solana.com
-VITE_RPC_ENDPOINT_API_KEY=your-helius-api-key
-```
-
-## Publishing (crates.io)
-
-### v0.2.x Release
-
-All program crates are published to crates.io as part of the v0.2 line:
-- `tribewarez-pot-o` v0.2.0
-- `tribewarez-staking` v0.2.1
-- `tribewarez-vault` v0.2.0
-- `tribewarez-swap` v0.2.0
-- `pot-o-core` v0.2.0 (provides tensor types and calculations)
-
-**Installation**:
-```toml
-[dependencies]
-tribewarez-pot-o = "0.2.0"
-tribewarez-staking = "0.2.1"
-tribewarez-vault = "0.2.0"
-tribewarez-swap = "0.2.0"
-pot-o-core = "0.2.0"
-```
-
-See [CHANGELOG.md](CHANGELOG.md) for v0.2.x features, testing results, and migration guide from v0.1.x.
 
 ## Support
 

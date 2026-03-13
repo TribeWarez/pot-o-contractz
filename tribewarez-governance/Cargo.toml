@@ -2,6 +2,12 @@
 name = "tribewarez-governance"
 version = "0.3.2"
 edition = "2021"
+description = "DAO governance program for Tribewarez DeFi with proposals and voting"
+license = "MIT"
+repository = "https://github.com/TribeWarez/pot-o-contractz"
+homepage = "https://defi.tribewarez.com"
+keywords = ["solana", "anchor", "tribewarez", "governance", "dao"]
+categories = ["cryptography::cryptocurrencies"]
 
 [dependencies]
 anchor-lang = { workspace = true, features = ["init-if-needed"] }

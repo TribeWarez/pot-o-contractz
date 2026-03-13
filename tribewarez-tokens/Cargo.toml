@@ -2,6 +2,12 @@
 name = "tribewarez-tokens"
 version = "0.3.2"
 edition = "2021"
+description = "Multi-token ecosystem management for Tribewarez DeFi (AUMCOIN, TRIBECOIN, RAVECOIN)"
+license = "MIT"
+repository = "https://github.com/TribeWarez/pot-o-contractz"
+homepage = "https://defi.tribewarez.com"
+keywords = ["solana", "anchor", "tribewarez", "tokens", "defi"]
+categories = ["cryptography::cryptocurrencies"]
 
 [dependencies]
 anchor-lang = { workspace = true, features = ["init-if-needed"] }
